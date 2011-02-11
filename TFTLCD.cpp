@@ -2,12 +2,39 @@
 // MIT license
 
 #include "TFTLCD.h"
+#include "glcdfont.c"
 #include <avr/pgmspace.h>
 
 void TFTLCD::goHome(void) {
   writeRegister(0x0020, 0X0000);     // GRAM Address Set (Horizontal Address) (R20h)
   writeRegister(0x0021, 0X0000);     // GRAM Address Set (Vertical Address) (R21h)
   writeCommand(0x0022);            // Write Data to GRAM (R22h)
+}
+
+void TFTLCD::drawString(uint16_t x, uint16_t y, char *c, 
+			uint16_t color, uint8_t size) {
+  while (c[0] != 0) {
+    drawChar(x, y, c[0], color, size);
+    x += size*6;
+    c++;
+  }
+}
+// draw a character
+void TFTLCD::drawChar(uint16_t x, uint16_t y, char c, 
+		      uint16_t color, uint8_t size) {
+  for (uint8_t i =0; i<5; i++ ) {
+    uint8_t line = pgm_read_byte(font+(c*5)+i);
+    for (uint8_t j = 0; j<8; j++) {
+      if (line & 0x1) {
+	if (size == 1) // default size
+	  drawPixel(x+i, y+j, color);
+	else {  // big size
+	  fillRect(x+i*size, y+j*size, size, size, color);
+	} 
+      }
+      line >>= 1;
+    }
+  }
 }
 
 // draw a rectangle

@@ -54,6 +54,15 @@ void setup(void) {
  
   tft.initDisplay();
   
+  tft.fillScreen(BLACK);
+  int x = 10;
+  for (uint8_t size=1; size<8; size++) {
+    tft.drawChar(x, 100, 'A', RED, size);
+    x += size * 9;
+  }
+  tft.drawString(50, 50, "hello world!", RED);
+  delay(500);
+
   testlines(CYAN);
   delay(500);
   testfastlines(RED, BLUE);
