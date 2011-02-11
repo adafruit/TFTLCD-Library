@@ -1,3 +1,5 @@
+// Graphics library by ladyada/adafruit with init code from Rossum 
+// MIT license
 
 #include <WProgram.h>
 

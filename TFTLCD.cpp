@@ -1,3 +1,6 @@
+// Graphics library by ladyada/adafruit with init code from Rossum 
+// MIT license
+
 #include "TFTLCD.h"
 #include <avr/pgmspace.h>
 
