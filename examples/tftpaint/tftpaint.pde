@@ -1,6 +1,20 @@
 #include "TFTLCD.h"
 #include "TouchScreen.h"
 
+/* For the 8 data pins:
+Duemilanove/Diecimila/UNO/etc ('168 and '328 chips) microcontoller:
+D0 connects to digital 8
+D1 connects to digital 9
+D2 connects to digital 2
+D3 connects to digital 3
+D4 connects to digital 4
+D5 connects to digital 5
+D6 connects to digital 6
+D7 connects to digital 7
+
+For Mega's use pins 22 thru 29 (on the double header at the end)
+*/
+
 #define YP A3  // must be an analog pin, use "An" notation!
 #define XM A2  // must be an analog pin, use "An" notation!
 #define YM 9   // can be a digital pin

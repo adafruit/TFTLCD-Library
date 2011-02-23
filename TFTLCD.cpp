@@ -384,25 +384,48 @@ void TFTLCD::reset(void) {
 }
 
 inline void TFTLCD::setWriteDir(void) {
+#if defined(__AVR_ATmega168__) || defined(__AVR_ATmega328P__) || defined (__AVR_ATmega328) || (__AVR_ATmega8__)
   DDRB |= 0x3;
   DDRD |= 0xFC;
+#elif defined(__AVR_ATmega1281__) || defined(__AVR_ATmega2561__) || defined(__AVR_ATmega2560__) || defined(__AVR_ATmega1280__) 
+  DDRA = 0xFF;
+#else
+  #error "No pins defined!"
+#endif
 }
 
 inline void TFTLCD::setReadDir(void) {
+#if defined(__AVR_ATmega168__) || defined(__AVR_ATmega328P__) || defined (__AVR_ATmega328) || (__AVR_ATmega8__)
   DDRB &= ~0x3;
   DDRD &= ~0xFC;
+#elif defined(__AVR_ATmega1281__) || defined(__AVR_ATmega2561__) || defined(__AVR_ATmega2560__) || defined(__AVR_ATmega1280__) 
+  DDRA = 0;
+#else
+  #error "No pins defined!"
+#endif
 }
 
 inline void TFTLCD::write8(uint8_t d) {
+#if defined(__AVR_ATmega168__) || defined(__AVR_ATmega328P__) || defined (__AVR_ATmega328) || (__AVR_ATmega8__)
  PORTB = (PINB & 0xFC) | (d & 0x3);  // bottom 2 bits
  PORTD = (PORTD & 0x3) | (d & 0xFC); // top 6 bits
+#elif defined(__AVR_ATmega1281__) || defined(__AVR_ATmega2561__) || defined(__AVR_ATmega2560__) || defined(__AVR_ATmega1280__) 
+  PORTA = d;    // pins 22 thru 29
+#else
+  #error "No pins defined!"
+#endif
 }
 
 inline uint8_t TFTLCD::read8(void) {
  uint8_t d;
- 
+#if defined(__AVR_ATmega168__) || defined(__AVR_ATmega328P__) || defined (__AVR_ATmega328) || (__AVR_ATmega8__)
  d = PIND & 0xFC;  // top 6 bits
  d |= PINB & 0x3;  // bottom 2 bits
+#elif defined(__AVR_ATmega1281__) || defined(__AVR_ATmega2561__) || defined(__AVR_ATmega2560__)  || defined(__AVR_ATmega1280__) 
+ d = PINA;    // pins 22 thru 29
+#else
+  #error "No pins defined!"
+#endif
 
  return d;
 }
