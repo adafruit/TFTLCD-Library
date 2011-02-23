@@ -186,7 +186,7 @@ void TFTLCD::drawLine(uint16_t x0, uint16_t y0, uint16_t x1, uint16_t y1,
   } else {
     ystep = -1;}
 
-  for (; x0<x1; x0++) {
+  for (; x0<=x1; x0++) {
     if (steep) {
       drawPixel(y0, x0, color);
     } else {
