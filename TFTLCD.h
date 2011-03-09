@@ -81,6 +81,7 @@ class TFTLCD {
   // commands
   void initDisplay(void);
   void goHome(void);
+  void goTo(int x, int y);
 
   void reset(void);
   void setRotation(uint8_t x);
@@ -99,14 +100,19 @@ class TFTLCD {
 
   static const uint16_t width = 240;
   static const uint16_t height = 320;
- private:
+
   void writeData_unsafe(uint16_t d);
 
   void setWriteDir(void);
   void setReadDir(void);
+ private:
   void write8(uint8_t d);
   uint8_t read8(void);
 
   uint8_t _cs, _cd, _reset, _wr, _rd;
+
+  uint8_t csport, cdport, wrport, rdport;
+  uint8_t cspin, cdpin, wrpin, rdpin;
+
   uint16_t _width, _height;
 };
