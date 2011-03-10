@@ -85,6 +85,7 @@ class TFTLCD {
 
   void reset(void);
   void setRotation(uint8_t x);
+  uint8_t getRotation();
 
   /* low level */
 
@@ -115,4 +116,6 @@ class TFTLCD {
   uint8_t cspin, cdpin, wrpin, rdpin;
 
   uint16_t _width, _height;
+
+  uint8_t rotation;
 };

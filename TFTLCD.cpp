@@ -331,7 +331,12 @@ void TFTLCD::initDisplay(void) {
   }
 }
 
+uint8_t TFTLCD::getRotation(void) {
+  return rotation;
+}
+
 void TFTLCD::setRotation(uint8_t x) {
+  rotation = x;
   switch (x) {
   case 0:
     writeRegister(TFTLCD_ENTRY_MOD, 0x1000);
@@ -341,7 +346,7 @@ void TFTLCD::setRotation(uint8_t x) {
   case 1:
     _width = 240; 
     _height = 320;
-    writeRegister(TFTLCD_ENTRY_MOD, 0x1038);
+    writeRegister(TFTLCD_ENTRY_MOD, 0x1018);
     break;
   case 2:
     _width = 240; 
@@ -365,6 +370,7 @@ TFTLCD::TFTLCD(uint8_t cs, uint8_t cd, uint8_t wr, uint8_t rd, uint8_t reset) {
   _rd = rd;
   _reset = reset;
   
+  rotation = 3;
   _width = 240;
   _height = 320;
 
@@ -403,6 +409,13 @@ void TFTLCD::reset(void) {
   digitalWrite(_reset, LOW);
   delay(2); 
   digitalWrite(_reset, HIGH);
+
+  // resync
+  writeData(0);
+  writeData(0);
+  writeData(0);  
+  writeData(0);
+  
 }
 
 void TFTLCD::setWriteDir(void) {
