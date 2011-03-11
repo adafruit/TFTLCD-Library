@@ -25,6 +25,9 @@ For Mega's use pins 22 thru 29 (on the double header at the end)
 //  Then pin 10 goes to CS (or whatever you have set up)
 #define SD_CS 10     // Set the chip select line to whatever you use (10 doesnt conflict with the library)
 
+// In the SD card, place 24 bit color BMP files (be sure they are 24-bit!)
+// There are examples in the sketch folder
+
 #include "TFTLCD.h"
 
 // our TFT wiring
