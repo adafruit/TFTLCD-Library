@@ -415,7 +415,6 @@ void TFTLCD::reset(void) {
   writeData(0);
   writeData(0);  
   writeData(0);
-  
 }
 
 void TFTLCD::setWriteDir(void) {
