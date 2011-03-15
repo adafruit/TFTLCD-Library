@@ -187,7 +187,8 @@ void TFTLCD::drawLine(uint16_t x0, uint16_t y0, uint16_t x1, uint16_t y1,
 
   uint16_t dx, dy;
   dx = x1 - x0;
-  dy = abs(y1 - y0);
+  //dy = abs(y1 - y0);
+  dy = abs((int16_t)y1 - (int16_t)y0);
 
   int16_t err = dx / 2;
   int16_t ystep;
