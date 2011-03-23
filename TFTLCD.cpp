@@ -188,16 +188,23 @@ void TFTLCD::drawFastLine(uint16_t x, uint16_t y, uint16_t length,
   writeRegister(TFTLCD_GRAM_VER_AD, y); // GRAM Address Set (Vertical Address) (R21h)
   writeCommand(TFTLCD_RW_GRAM);  // Write Data to GRAM (R22h)
 
-  digitalWrite(_cs, LOW);
-  digitalWrite(_cd, HIGH);
-  digitalWrite(_rd, HIGH);
-  digitalWrite(_wr, HIGH);
+
+  *portOutputRegister(csport) &= ~cspin;
+  //digitalWrite(_cs, LOW);
+  *portOutputRegister(cdport) |= cdpin;
+  //digitalWrite(_cd, HIGH);
+  *portOutputRegister(rdport) |= rdpin;
+  //digitalWrite(_rd, HIGH);
+  *portOutputRegister(wrport) |= wrpin;
+  //digitalWrite(_wr, HIGH);
 
   setWriteDir();
   while (length--) {
     writeData_unsafe(color); 
   }
-  digitalWrite(_cs, HIGH);
+
+  *portOutputRegister(csport) |= cspin;
+  //digitalWrite(_cs, HIGH);
 
   if (rotflag)
     setRotation(3);
@@ -254,17 +261,22 @@ void TFTLCD::fillScreen(uint16_t color) {
   i = 320;
   i *= 240;
   
-  digitalWrite(_cs, LOW);
-  digitalWrite(_cd, HIGH);
-  digitalWrite(_rd, HIGH);
-  
-  digitalWrite(_wr, HIGH);
+  *portOutputRegister(csport) &= ~cspin;
+  //digitalWrite(_cs, LOW);
+  *portOutputRegister(cdport) |= cdpin;
+  //digitalWrite(_cd, HIGH);
+  *portOutputRegister(rdport) |= rdpin;
+  //digitalWrite(_rd, HIGH);
+  *portOutputRegister(wrport) |= wrpin;
+  //digitalWrite(_wr, HIGH);
+
   setWriteDir();
   while (i--) {
     writeData_unsafe(color); 
   }
-  digitalWrite(_cs, HIGH);
 
+  *portOutputRegister(csport) |= cspin;
+  //digitalWrite(_cs, HIGH);
 }
 
 void TFTLCD::drawPixel(uint16_t x, uint16_t y, uint16_t color)
@@ -452,7 +464,7 @@ void TFTLCD::reset(void) {
   writeData(0);
 }
 
-void TFTLCD::setWriteDir(void) {
+inline void TFTLCD::setWriteDir(void) {
 #if defined(__AVR_ATmega168__) || defined(__AVR_ATmega328P__) || defined (__AVR_ATmega328) || (__AVR_ATmega8__)
   DATADDR2 |= DATA2_MASK;
   DATADDR1 |= DATA1_MASK;
@@ -463,7 +475,7 @@ void TFTLCD::setWriteDir(void) {
 #endif
 }
 
-void TFTLCD::setReadDir(void) {
+inline void TFTLCD::setReadDir(void) {
 #if defined(__AVR_ATmega168__) || defined(__AVR_ATmega328P__) || defined (__AVR_ATmega328) || (__AVR_ATmega8__)
   DATADDR2 &= ~DATA2_MASK;
   DATADDR1 &= ~DATA1_MASK;
@@ -549,68 +561,91 @@ void TFTLCD::writeData(uint16_t data) {
 // this is a 'sped up' version, with no direction setting, or pin initialization
 // not for external usage, but it does speed up stuff like a screen fill
 inline void TFTLCD::writeData_unsafe(uint16_t data) {
+  volatile uint8_t *wrportreg = portOutputRegister(wrport);
+
   write8(data >> 8);
 
-  *portOutputRegister(wrport) &= ~ wrpin;
+  *wrportreg &= ~wrpin;
   //digitalWrite(_wr, LOW);
-  *portOutputRegister(wrport) |=  wrpin;
+  *wrportreg |=  wrpin;
   //digitalWrite(_wr, HIGH);
 
   write8(data);
 
-  *portOutputRegister(wrport) &= ~ wrpin;
+  *wrportreg &= ~wrpin;
   //digitalWrite(_wr, LOW);
-  *portOutputRegister(wrport) |=  wrpin;
+  *wrportreg |=  wrpin;
   //digitalWrite(_wr, HIGH);
 }
 
 // the C/D pin is low during write
 void TFTLCD::writeCommand(uint16_t cmd) {
-  digitalWrite(_cs, LOW);
-  digitalWrite(_cd, LOW);
-  digitalWrite(_rd, HIGH);
+  volatile uint8_t *wrportreg = portOutputRegister(wrport);
+
+  *portOutputRegister(csport) &= ~cspin;
+  //digitalWrite(_cs, LOW);
+  *portOutputRegister(cdport) &= ~cdpin;
+  //digitalWrite(_cd, LOW);
+  *portOutputRegister(rdport) |= rdpin;
+  //digitalWrite(_rd, HIGH);
   
-  digitalWrite(_wr, HIGH);
+  *wrportreg |=  wrpin;
+  //digitalWrite(_wr, HIGH);
+
   setWriteDir();
   write8(cmd >> 8);
 
-  *portOutputRegister(wrport) &= ~ wrpin;
+  *wrportreg &= ~wrpin;
   //digitalWrite(_wr, LOW);
-  *portOutputRegister(wrport) |=  wrpin;
+  *wrportreg |=  wrpin;
   //digitalWrite(_wr, HIGH);
 
   write8(cmd);
 
-  *portOutputRegister(wrport) &= ~ wrpin;
+  *wrportreg &= ~wrpin;
   //digitalWrite(_wr, LOW);
-  *portOutputRegister(wrport) |=  wrpin;
+  *wrportreg |=  wrpin;
   //digitalWrite(_wr, HIGH);
-  
-  digitalWrite(_cs, HIGH);
+
+  *portOutputRegister(csport) |= cspin;
 }
 
 uint16_t TFTLCD::readData() {
  uint16_t d = 0;
  
- digitalWrite(_rd, HIGH);
- digitalWrite(_cd, HIGH);
- digitalWrite(_wr, HIGH);
- digitalWrite(_cs, LOW);
- 
- setReadDir();
- digitalWrite(_rd, LOW);
- delay(1);
- d = read8();
- d <<= 8;
- digitalWrite(_rd, HIGH);
- digitalWrite(_rd, LOW);
- delay(1);
- d |= read8();
- digitalWrite(_rd, HIGH);
- 
- digitalWrite(_cs, HIGH);
+  *portOutputRegister(csport) &= ~cspin;
+  //digitalWrite(_cs, LOW);
+  *portOutputRegister(cdport) |= cdpin;
+  //digitalWrite(_cd, HIGH);
+  *portOutputRegister(rdport) |= rdpin;
+  //digitalWrite(_rd, HIGH);
+  *portOutputRegister(wrport) |= wrpin;
+  //digitalWrite(_wr, HIGH);
+  
+  setReadDir();
+
+  *portOutputRegister(rdport) &= ~rdpin;
+  //digitalWrite(_rd, LOW);
+
+  delayMicroseconds(10);
+  d = read8();
+  d <<= 8;
+
+  *portOutputRegister(rdport) |= rdpin;
+  //digitalWrite(_rd, HIGH);
+  *portOutputRegister(rdport) &= ~rdpin;
+  //digitalWrite(_rd, LOW);
+
+  delayMicroseconds(10);
+  d |= read8();
+
+  *portOutputRegister(rdport) |= rdpin;
+  //digitalWrite(_rd, HIGH);
+  
+  *portOutputRegister(csport) |= cspin;
+  //digitalWrite(_cs, HIGH);
    
- return d;
+  return d;
 }
 
 
