@@ -52,7 +52,7 @@ TouchScreen ts = TouchScreen(XP, YP, XM, YM, 300);
 TFTLCD tft(LCD_CS, LCD_CD, LCD_WR, LCD_RD, LCD_RESET);
 
 #define BOXSIZE 40
-#define PENRADIUS 4
+#define PENRADIUS 3
 int oldcolor, currentcolor;
 
 void setup(void) {
@@ -103,13 +103,14 @@ void loop()
   digitalWrite(13, LOW);
 
   // if you're sharing pins, you'll need to fix the directions of the touchscreen pins!
-  pinMode(XP, OUTPUT);
+  //pinMode(XP, OUTPUT);
   pinMode(XM, OUTPUT);
   pinMode(YP, OUTPUT);
-  pinMode(YM, OUTPUT);
+  //pinMode(YM, OUTPUT);
 
   // we have some minimum pressure we consider 'valid'
   // pressure of 0 means no pressing!
+
   if (p.z > MINPRESSURE && p.z < MAXPRESSURE) {
     /*
     Serial.print("X = "); Serial.print(p.x);
@@ -174,4 +175,3 @@ void loop()
     }
   }
 }
-
