@@ -1,12 +1,46 @@
 // Graphics library by ladyada/adafruit with init code from Rossum 
 // MIT license
 
+
+// comment or uncomment the next line for special pinout!
+//#define USE_ADAFRUIT_SHIELD_PINOUT 1
+
+
+#ifdef USE_ADAFRUIT_SHIELD_PINOUT
+
+// special defines for the dataport
+ #define DATAPORT1 PORTD
+ #define DATAPIN1 PIND
+ #define DATAPORT2 PORTB
+ #define DATAPIN2 PINB
+ #define DATA1_MASK 0xD0
+ #define DATA2_MASK 0x2F
+
+// TODO: add mega pinout
+#else
+ // for the breakout board tutorial, two ports are used :/
+ #define DATAPORT1 PORTD
+ #define DATAPIN1  PIND
+ #define DATADDR1  DDRD
+
+ #define DATAPORT2 PORTB
+ #define DATAPIN2  PINB
+ #define DATADDR2  DDRB
+
+ #define DATA1_MASK 0xFC  // top 6 bits
+ #define DATA2_MASK 0x03  // bottom 2 bits
+
+ // Megas have lots of pins, we'll use port A - all 8 bits in a row - pins 22 thru 29
+ #define MEGA_DATAPORT PORTA
+ #define MEGA_DATAPIN  PINA
+ #define MEGA_DATADDR  DDRA
+#endif
+
+
 #include "TFTLCD.h"
 #include "glcdfont.c"
 #include <avr/pgmspace.h>
-
 #include "pins_arduino.h"
-
 #include "wiring_private.h"
 
 
@@ -420,10 +454,10 @@ void TFTLCD::reset(void) {
 
 void TFTLCD::setWriteDir(void) {
 #if defined(__AVR_ATmega168__) || defined(__AVR_ATmega328P__) || defined (__AVR_ATmega328) || (__AVR_ATmega8__)
-  DDRB |= 0x3;
-  DDRD |= 0xFC;
+  DATADDR2 |= DATA2_MASK;
+  DATADDR1 |= DATA1_MASK;
 #elif defined(__AVR_ATmega1281__) || defined(__AVR_ATmega2561__) || defined(__AVR_ATmega2560__) || defined(__AVR_ATmega1280__) 
-  DDRA = 0xFF;
+  MEGA_DATADDR = 0xFF;
 #else
   #error "No pins defined!"
 #endif
@@ -431,10 +465,10 @@ void TFTLCD::setWriteDir(void) {
 
 void TFTLCD::setReadDir(void) {
 #if defined(__AVR_ATmega168__) || defined(__AVR_ATmega328P__) || defined (__AVR_ATmega328) || (__AVR_ATmega8__)
-  DDRB &= ~0x3;
-  DDRD &= ~0xFC;
+  DATADDR2 &= ~DATA2_MASK;
+  DATADDR1 &= ~DATA1_MASK;
 #elif defined(__AVR_ATmega1281__) || defined(__AVR_ATmega2561__) || defined(__AVR_ATmega2560__) || defined(__AVR_ATmega1280__) 
-  DDRA = 0;
+  MEGA_DATADDR = 0;
 #else
   #error "No pins defined!"
 #endif
@@ -442,10 +476,16 @@ void TFTLCD::setReadDir(void) {
 
 inline void TFTLCD::write8(uint8_t d) {
 #if defined(__AVR_ATmega168__) || defined(__AVR_ATmega328P__) || defined (__AVR_ATmega328) || (__AVR_ATmega8__)
- PORTB = (PINB & 0xFC) | (d & 0x3);  // bottom 2 bits
- PORTD = (PORTD & 0x3) | (d & 0xFC); // top 6 bits
+
+  DATAPORT2 = (DATAPORT2 & DATA1_MASK) | 
+    (d & DATA2_MASK);
+  DATAPORT1 = (DATAPORT1 & DATA2_MASK) | 
+    (d & DATA1_MASK); // top 6 bits
+  
 #elif defined(__AVR_ATmega1281__) || defined(__AVR_ATmega2561__) || defined(__AVR_ATmega2560__) || defined(__AVR_ATmega1280__) 
-  PORTA = d;    // pins 22 thru 29
+
+  MEGA_DATAPORT = d;  
+
 #else
   #error "No pins defined!"
 #endif
@@ -454,12 +494,18 @@ inline void TFTLCD::write8(uint8_t d) {
 inline uint8_t TFTLCD::read8(void) {
  uint8_t d;
 #if defined(__AVR_ATmega168__) || defined(__AVR_ATmega328P__) || defined (__AVR_ATmega328) || (__AVR_ATmega8__)
- d = PIND & 0xFC;  // top 6 bits
- d |= PINB & 0x3;  // bottom 2 bits
+
+ d = DATAPIN1 & DATA1_MASK; 
+ d |= DATAPIN2 & DATA2_MASK; 
+
 #elif defined(__AVR_ATmega1281__) || defined(__AVR_ATmega2561__) || defined(__AVR_ATmega2560__)  || defined(__AVR_ATmega1280__) 
- d = PINA;    // pins 22 thru 29
+
+ d = MEGA_DATAPIN;  
+
 #else
+
   #error "No pins defined!"
+
 #endif
 
  return d;
