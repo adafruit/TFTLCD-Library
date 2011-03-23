@@ -213,9 +213,9 @@ void TFTLCD::drawFastLine(uint16_t x, uint16_t y, uint16_t length,
 
 
 // bresenham's algorithm - thx wikpedia
-void TFTLCD::drawLine(uint16_t x0, uint16_t y0, uint16_t x1, uint16_t y1, 
+void TFTLCD::drawLine(int16_t x0, int16_t y0, int16_t x1, int16_t y1, 
 		      uint16_t color) {
-  uint8_t steep = abs(y1 - y0) > abs(x1 - x0);
+  int16_t steep = abs(y1 - y0) > abs(x1 - x0);
   if (steep) {
     swap(x0, y0);
     swap(x1, y1);
@@ -226,10 +226,10 @@ void TFTLCD::drawLine(uint16_t x0, uint16_t y0, uint16_t x1, uint16_t y1,
     swap(y0, y1);
   }
 
-  uint16_t dx, dy;
+  int16_t dx, dy;
   dx = x1 - x0;
   //dy = abs(y1 - y0);
-  dy = abs((int16_t)y1 - (int16_t)y0);
+  dy = abs(y1 - y0);
 
   int16_t err = dx / 2;
   int16_t ystep;

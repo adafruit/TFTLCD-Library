@@ -58,7 +58,7 @@
 
 #define TFTLCD_DELAYCMD                 0xFF
 
-#define swap(a, b) { uint16_t t = a; a = b; b = t; }
+#define swap(a, b) { int16_t t = a; a = b; b = t; }
 
 class TFTLCD {
  public:
@@ -67,7 +67,7 @@ class TFTLCD {
   // drawing primitives!
   void drawPixel(uint16_t x, uint16_t y, uint16_t color);
   void fillScreen(uint16_t color);
-  void drawLine(uint16_t x0, uint16_t y0, uint16_t x1, uint16_t y1, uint16_t color);
+  void drawLine(int16_t x0, int16_t y0, int16_t x1, int16_t y1, uint16_t color);
   void drawFastLine(uint16_t x0, uint16_t y0, uint16_t l, uint16_t color, uint8_t flag);
   void drawVerticalLine(uint16_t x0, uint16_t y0, uint16_t length, uint16_t color);
   void drawHorizontalLine(uint16_t x0, uint16_t y0, uint16_t length, uint16_t color);
