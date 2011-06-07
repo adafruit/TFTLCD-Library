@@ -1,18 +1,17 @@
 // Graphics library by ladyada/adafruit with init code from Rossum 
 // MIT license
 
-
-// comment or uncomment the next line for special pinout!
-//#define USE_ADAFRUIT_SHIELD_PINOUT 1
-
-
 #ifdef USE_ADAFRUIT_SHIELD_PINOUT
 
 // special defines for the dataport
  #define DATAPORT1 PORTD
  #define DATAPIN1 PIND
+ #define DATADDR1 DDRD
+
  #define DATAPORT2 PORTB
  #define DATAPIN2 PINB
+ #define DATADDR2 DDRB
+
  #define DATA1_MASK 0xD0
  #define DATA2_MASK 0x2F
 
@@ -48,6 +47,12 @@ void TFTLCD::goHome(void) {
   goTo(0,0);
 }
 
+uint16_t TFTLCD::width(void) {
+  return _width;
+}
+uint16_t TFTLCD::height(void) {
+  return _height;
+}
 
 void TFTLCD::goTo(int x, int y) {
   writeRegister(0x0020, x);     // GRAM Address Set (Horizontal Address) (R20h)
@@ -55,6 +60,30 @@ void TFTLCD::goTo(int x, int y) {
   writeCommand(0x0022);            // Write Data to GRAM (R22h)
 }
 
+void TFTLCD::setCursor(uint16_t x, uint16_t y) {
+  cursor_x = x;
+  cursor_y = y;
+}
+
+void TFTLCD::setTextSize(uint8_t s) {
+  textsize = s;
+}
+
+void TFTLCD::setTextColor(uint16_t c) {
+  textcolor = c;
+}
+
+void TFTLCD::write(uint8_t c) {
+  if (c == '\n') {
+    cursor_y += textsize*8;
+    cursor_x = 0;
+  } else if (c == '\r') {
+    // skip em
+  } else {
+    drawChar(cursor_x, cursor_y, c, textcolor, textsize);
+    cursor_x += textsize*6;
+  }
+}
 
 void TFTLCD::drawString(uint16_t x, uint16_t y, char *c, 
 			uint16_t color, uint8_t size) {
@@ -100,6 +129,7 @@ void TFTLCD::fillCircle(uint16_t x0, uint16_t y0, uint16_t r, uint16_t color) {
   int16_t x = 0;
   int16_t y = r;
 
+  writeRegister(TFTLCD_ENTRY_MOD, 0x1030);
   drawVerticalLine(x0, y0-r, 2*r+1, color);
 
   while (x<y) {
@@ -167,22 +197,57 @@ void TFTLCD::fillRect(uint16_t x, uint16_t y, uint16_t w, uint16_t h,
 
 void TFTLCD::drawVerticalLine(uint16_t x, uint16_t y, uint16_t length, uint16_t color)
 {
-  if (x >= width) return;
+  if (x >= _width) return;
 
   drawFastLine(x,y,length,color,1);
 }
 
 void TFTLCD::drawHorizontalLine(uint16_t x, uint16_t y, uint16_t length, uint16_t color)
 {
-  if (y >= height) return;
+  if (y >= _height) return;
   drawFastLine(x,y,length,color,0);
 }
 
 void TFTLCD::drawFastLine(uint16_t x, uint16_t y, uint16_t length, 
 			  uint16_t color, uint8_t rotflag)
 {
-  if (rotflag)
-    setRotation(2);
+  uint16_t newentrymod;
+
+  switch (rotation) {
+  case 0:
+    if (rotflag)
+      newentrymod = 0x1028;   // we want a 'vertical line'
+    else 
+      newentrymod = 0x1030;   // we want a 'horizontal line'
+    break;
+  case 1:
+    swap(x, y);
+    // first up fix the X
+    x = TFTWIDTH - x - 1;
+    if (rotflag)
+      newentrymod = 0x1000;   // we want a 'vertical line'
+    else 
+      newentrymod = 0x1028;   // we want a 'horizontal line'
+    break;
+  case 2:
+    x = TFTWIDTH - x - 1;
+    y = TFTHEIGHT - y - 1;
+    if (rotflag)
+      newentrymod = 0x1008;   // we want a 'vertical line'
+    else 
+      newentrymod = 0x1020;   // we want a 'horizontal line'
+    break;
+  case 3:
+    swap(x,y);
+    y = TFTHEIGHT - y - 1;
+    if (rotflag)
+      newentrymod = 0x1030;   // we want a 'vertical line'
+    else 
+      newentrymod = 0x1008;   // we want a 'horizontal line'
+    break;
+  }
+  
+  writeRegister(TFTLCD_ENTRY_MOD, newentrymod);
 
   writeRegister(TFTLCD_GRAM_HOR_AD, x); // GRAM Address Set (Horizontal Address) (R20h)
   writeRegister(TFTLCD_GRAM_VER_AD, y); // GRAM Address Set (Vertical Address) (R21h)
@@ -203,11 +268,10 @@ void TFTLCD::drawFastLine(uint16_t x, uint16_t y, uint16_t length,
     writeData_unsafe(color); 
   }
 
+  // set back to default
   *portOutputRegister(csport) |= cspin;
   //digitalWrite(_cs, HIGH);
-
-  if (rotflag)
-    setRotation(3);
+  writeRegister(TFTLCD_ENTRY_MOD, 0x1030);
 }
 
 
@@ -215,6 +279,8 @@ void TFTLCD::drawFastLine(uint16_t x, uint16_t y, uint16_t length,
 // bresenham's algorithm - thx wikpedia
 void TFTLCD::drawLine(int16_t x0, int16_t y0, int16_t x1, int16_t y1, 
 		      uint16_t color) {
+  // if you're in rotation 1 or 3, we need to swap the X and Y's
+
   int16_t steep = abs(y1 - y0) > abs(x1 - x0);
   if (steep) {
     swap(x0, y0);
@@ -281,7 +347,23 @@ void TFTLCD::fillScreen(uint16_t color) {
 
 void TFTLCD::drawPixel(uint16_t x, uint16_t y, uint16_t color)
 {
-  if ((x >= width) || (y >= height)) return;
+  // check rotation, move pixel around if necessary
+  switch (rotation) {
+  case 1:
+    swap(x, y);
+    x = TFTWIDTH - x - 1;
+    break;
+  case 2:
+    x = TFTWIDTH - x - 1;
+    y = TFTHEIGHT - y - 1;
+    break;
+  case 3:
+    swap(x, y);
+    y = TFTHEIGHT - y - 1;
+    break;
+  }
+    
+  if ((x >= TFTWIDTH) || (y >= TFTHEIGHT)) return;
   writeRegister(TFTLCD_GRAM_HOR_AD, x); // GRAM Address Set (Horizontal Address) (R20h)
   writeRegister(TFTLCD_GRAM_VER_AD, y); // GRAM Address Set (Vertical Address) (R21h)
   writeCommand(TFTLCD_RW_GRAM);  // Write Data to GRAM (R22h)
@@ -383,27 +465,26 @@ uint8_t TFTLCD::getRotation(void) {
 }
 
 void TFTLCD::setRotation(uint8_t x) {
+  writeRegister(TFTLCD_ENTRY_MOD, 0x1030);
+
+  x %= 4;  // cant be higher than 3
   rotation = x;
   switch (x) {
   case 0:
-    writeRegister(TFTLCD_ENTRY_MOD, 0x1000);
-    _width = 240; 
-    _height = 320;
+    _width = TFTWIDTH; 
+    _height = TFTHEIGHT;
     break;
   case 1:
-    _width = 240; 
-    _height = 320;
-    writeRegister(TFTLCD_ENTRY_MOD, 0x1018);
+    _width = TFTHEIGHT; 
+    _height = TFTWIDTH;
     break;
   case 2:
-    _width = 240; 
-    _height = 320;
-    writeRegister(TFTLCD_ENTRY_MOD, 0x1028);
+    _width = TFTWIDTH; 
+    _height = TFTHEIGHT;
     break;
   case 3:
-    _width = 240; 
-    _height = 320;
-    writeRegister(TFTLCD_ENTRY_MOD, 0x1030);
+    _width = TFTHEIGHT; 
+    _height = TFTWIDTH;
     break;
  }
 }
@@ -417,9 +498,9 @@ TFTLCD::TFTLCD(uint8_t cs, uint8_t cd, uint8_t wr, uint8_t rd, uint8_t reset) {
   _rd = rd;
   _reset = reset;
   
-  rotation = 3;
-  _width = 240;
-  _height = 320;
+  rotation = 0;
+  _width = TFTWIDTH;
+  _height = TFTHEIGHT;
 
   // disable the LCD
   digitalWrite(_cs, HIGH);
@@ -447,15 +528,20 @@ TFTLCD::TFTLCD(uint8_t cs, uint8_t cd, uint8_t wr, uint8_t rd, uint8_t reset) {
   wrpin = digitalPinToBitMask(_wr);
   rdpin = digitalPinToBitMask(_rd);
 
+  cursor_y = cursor_x = 0;
+  textsize = 1;
+  textcolor = 0xFFFF;
 }
 
 
 /********************************** low level pin interface */
 
 void TFTLCD::reset(void) {
-  digitalWrite(_reset, LOW);
+  if (_reset)
+    digitalWrite(_reset, LOW);
   delay(2); 
-  digitalWrite(_reset, HIGH);
+  if (_reset)
+    digitalWrite(_reset, HIGH);
 
   // resync
   writeData(0);

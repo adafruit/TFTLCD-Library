@@ -3,6 +3,10 @@
 
 #include <WProgram.h>
 
+// comment or uncomment the next line for special pinout!
+//#define USE_ADAFRUIT_SHIELD_PINOUT
+
+
 // register names from Peter Barrett's Microtouch code
 
 #define TFTLCD_START_OSC			0x00
@@ -60,7 +64,7 @@
 
 #define swap(a, b) { int16_t t = a; a = b; b = t; }
 
-class TFTLCD {
+class TFTLCD : public Print {
  public:
   TFTLCD(uint8_t cs, uint8_t cd, uint8_t wr, uint8_t rd, uint8_t reset);
 
@@ -75,6 +79,12 @@ class TFTLCD {
   void fillRect(uint16_t x0, uint16_t y0, uint16_t w, uint16_t h, uint16_t color);
   void drawCircle(uint16_t x0, uint16_t y0, uint16_t r,	uint16_t color);
   void fillCircle(uint16_t x0, uint16_t y0, uint16_t r,	uint16_t color);
+
+  void setCursor(uint16_t x, uint16_t y);
+  void setTextColor(uint16_t c);
+  void setTextSize(uint8_t s);
+  virtual void write(uint8_t);
+
   void drawChar(uint16_t x, uint16_t y, char c, uint16_t color, uint8_t s = 1);
   void drawString(uint16_t x, uint16_t y, char *c, uint16_t color, uint8_t s = 1);
 
@@ -96,11 +106,11 @@ class TFTLCD {
   void writeRegister(uint16_t addr, uint16_t data);
 
 
-  //uint16_t width();
-  //uint16_t height();
+  uint16_t width();
+  uint16_t height();
 
-  static const uint16_t width = 240;
-  static const uint16_t height = 320;
+  static const uint16_t TFTWIDTH = 240;
+  static const uint16_t TFTHEIGHT = 320;
 
   void writeData_unsafe(uint16_t d);
 
@@ -116,6 +126,8 @@ class TFTLCD {
   uint8_t cspin, cdpin, wrpin, rdpin;
 
   uint16_t _width, _height;
-
+  uint8_t textsize;
+  uint16_t cursor_x, cursor_y;
+  uint16_t textcolor;
   uint8_t rotation;
 };
