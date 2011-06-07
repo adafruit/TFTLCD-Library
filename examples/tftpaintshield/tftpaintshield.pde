@@ -1,6 +1,10 @@
 #include "TFTLCD.h"
 #include "TouchScreen.h"
 
+#if not defined USE_ADAFRUIT_SHIELD_PINOUT 
+ #error "For use with the shield, make sure to #define USE_ADAFRUIT_SHIELD_PINOUT in the TFTLCD.h library file"
+#endif
+
 // These are the pins for the shield!
 #define YP A1  // must be an analog pin, use "An" notation!
 #define XM A2  // must be an analog pin, use "An" notation!
