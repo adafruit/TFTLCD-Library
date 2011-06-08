@@ -77,6 +77,8 @@ class TFTLCD : public Print {
   void drawHorizontalLine(uint16_t x0, uint16_t y0, uint16_t length, uint16_t color);
   void drawRect(uint16_t x0, uint16_t y0, uint16_t w, uint16_t h, uint16_t color);
   void fillRect(uint16_t x0, uint16_t y0, uint16_t w, uint16_t h, uint16_t color);
+  void drawRoundRect(uint16_t x0, uint16_t y0, uint16_t w, uint16_t h, uint16_t radius, uint16_t color);
+  void fillRoundRect(uint16_t x0, uint16_t y0, uint16_t w, uint16_t h, uint16_t radius, uint16_t color);
   void drawCircle(uint16_t x0, uint16_t y0, uint16_t r,	uint16_t color);
   void fillCircle(uint16_t x0, uint16_t y0, uint16_t r,	uint16_t color);
 
@@ -117,6 +119,8 @@ class TFTLCD : public Print {
   void setWriteDir(void);
   void setReadDir(void);
  private:
+  void drawCircleHelper(uint16_t x0, uint16_t y0, uint16_t r, uint16_t xs, uint16_t ys, uint16_t color);
+
   void write8(uint8_t d);
   uint8_t read8(void);
 
