@@ -1,3 +1,5 @@
+#include "TFTLCD.h"
+
 // Graphics library by ladyada/adafruit with init code from Rossum 
 // MIT license
 
@@ -14,6 +16,11 @@
 
  #define DATA1_MASK 0xD0
  #define DATA2_MASK 0x2F
+
+ #define MEGA_DATAPORT1 PORTH
+ #define MEGA_DATAPORT2 PORTB
+ #define MEGA_DATAPORT3 PORTB
+#define MEGA_DATA1_MASK 
 
 // TODO: add mega pinout
 #else
@@ -36,7 +43,6 @@
 #endif
 
 
-#include "TFTLCD.h"
 #include "glcdfont.c"
 #include <avr/pgmspace.h>
 #include "pins_arduino.h"
@@ -121,6 +127,18 @@ void TFTLCD::drawRect(uint16_t x, uint16_t y, uint16_t w, uint16_t h,
   drawVerticalLine(x+w-1, y, h, color);
 }
 
+// draw a rounded rectangle
+void TFTLCD::drawRoundRect(uint16_t x, uint16_t y, uint16_t w, uint16_t h, uint16_t r,
+			   uint16_t color) {
+  // smarter version
+  drawHorizontalLine(x+r, y, w-2*r, color);
+  drawHorizontalLine(x+r, y+h-1, w-2*r, color);
+  drawVerticalLine(x, y+r, h-2*r, color);
+  drawVerticalLine(x+w-1, y+r, h-2*r, color);
+
+  drawCircleHelper(x+w/2, y+w/2, r, (w - 2*r - 1)/2, (h - 2*r - 1)/2, 0xFFFF);
+}
+
 // fill a circle
 void TFTLCD::fillCircle(uint16_t x0, uint16_t y0, uint16_t r, uint16_t color) {
   int16_t f = 1 - r;
@@ -150,7 +168,14 @@ void TFTLCD::fillCircle(uint16_t x0, uint16_t y0, uint16_t r, uint16_t color) {
 }
 
 // draw a circle outline
+
 void TFTLCD::drawCircle(uint16_t x0, uint16_t y0, uint16_t r, 
+			uint16_t color) {
+  drawCircleHelper(x0, y0, r, 0, 0, color);
+
+}
+
+void TFTLCD::drawCircleHelper(uint16_t x0, uint16_t y0, uint16_t r, uint16_t xspace, uint16_t yspace,
 			uint16_t color) {
   int16_t f = 1 - r;
   int16_t ddF_x = 1;
@@ -158,10 +183,12 @@ void TFTLCD::drawCircle(uint16_t x0, uint16_t y0, uint16_t r,
   int16_t x = 0;
   int16_t y = r;
 
-  drawPixel(x0, y0+r, color);
-  drawPixel(x0, y0-r, color);
-  drawPixel(x0+r, y0, color);
-  drawPixel(x0-r, y0, color);
+  if (xspace == 0) {
+    drawPixel(x0, y0+r, color);
+    drawPixel(x0, y0-r, color);
+    drawPixel(x0+r, y0, color);
+    drawPixel(x0-r, y0, color);
+  }
 
   while (x<y) {
     if (f >= 0) {
@@ -173,15 +200,15 @@ void TFTLCD::drawCircle(uint16_t x0, uint16_t y0, uint16_t r,
     ddF_x += 2;
     f += ddF_x;
   
-    drawPixel(x0 + x, y0 + y, color);
-    drawPixel(x0 - x, y0 + y, color);
-    drawPixel(x0 + x, y0 - y, color);
-    drawPixel(x0 - x, y0 - y, color);
+    drawPixel(x0 + x + xspace, y0 + y + yspace, color);
+    drawPixel(x0 - x - xspace, y0 + y + yspace, color);
+    drawPixel(x0 + x + xspace, y0 - y - yspace, color);
+    drawPixel(x0 - x - xspace, y0 - y - yspace, color);
     
-    drawPixel(x0 + y, y0 + x, color);
-    drawPixel(x0 - y, y0 + x, color);
-    drawPixel(x0 + y, y0 - x, color);
-    drawPixel(x0 - y, y0 - x, color);
+    drawPixel(x0 + y + xspace, y0 + x + yspace, color);
+    drawPixel(x0 - y - xspace, y0 + x + yspace, color);
+    drawPixel(x0 + y + xspace, y0 - x - yspace, color);
+    drawPixel(x0 - y - xspace, y0 - x - yspace, color);
     
   }
 }
