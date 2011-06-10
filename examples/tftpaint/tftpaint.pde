@@ -121,12 +121,12 @@ void loop()
     if (p.y < (TS_MINY-5)) {
       Serial.println("erase");
      // press the bottom of the screen to erase 
-      tft.fillRect(0, BOXSIZE, tft.width, tft.height-BOXSIZE, BLACK);
+      tft.fillRect(0, BOXSIZE, tft.width(), tft.height()-BOXSIZE, BLACK);
       
     }
     // turn from 0->1023 to tft.width
-    p.x = map(p.x, TS_MINX, TS_MAXX, tft.width, 0);
-    p.y = map(p.y, TS_MINY, TS_MAXY, tft.height, 0);
+    p.x = map(p.x, TS_MINX, TS_MAXX, tft.width(), 0);
+    p.y = map(p.y, TS_MINY, TS_MAXY, tft.height(), 0);
     /*
     Serial.print("("); Serial.print(p.x);
     Serial.print(", "); Serial.print(p.y);
@@ -170,7 +170,7 @@ void loop()
           if (oldcolor == MAGENTA) tft.fillRect(BOXSIZE*5, 0, BOXSIZE, BOXSIZE, MAGENTA);
        }
     }
-    if (((p.y-PENRADIUS) > BOXSIZE) && ((p.y+PENRADIUS) < tft.height)) {
+    if (((p.y-PENRADIUS) > BOXSIZE) && ((p.y+PENRADIUS) < tft.height())) {
       tft.fillCircle(p.x, p.y, PENRADIUS, currentcolor);
     }
   }
