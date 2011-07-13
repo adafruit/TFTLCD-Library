@@ -4,7 +4,7 @@
 #include <WProgram.h>
 
 // comment or uncomment the next line for special pinout!
-//#define USE_ADAFRUIT_SHIELD_PINOUT
+#define USE_ADAFRUIT_SHIELD_PINOUT
 
 
 // register names from Peter Barrett's Microtouch code
@@ -75,6 +75,13 @@ class TFTLCD : public Print {
   void drawFastLine(uint16_t x0, uint16_t y0, uint16_t l, uint16_t color, uint8_t flag);
   void drawVerticalLine(uint16_t x0, uint16_t y0, uint16_t length, uint16_t color);
   void drawHorizontalLine(uint16_t x0, uint16_t y0, uint16_t length, uint16_t color);
+  void drawTriangle(uint16_t x0, uint16_t y0,
+			  uint16_t x1, uint16_t y1,
+			  uint16_t x2, uint16_t y2, uint16_t color);
+  void fillTriangle(int32_t x0, int32_t y0,
+			  int32_t x1, int32_t y1,
+		    int32_t x2, int32_t y2, 
+		    uint16_t color);
   void drawRect(uint16_t x0, uint16_t y0, uint16_t w, uint16_t h, uint16_t color);
   void fillRect(uint16_t x0, uint16_t y0, uint16_t w, uint16_t h, uint16_t color);
   void drawRoundRect(uint16_t x0, uint16_t y0, uint16_t w, uint16_t h, uint16_t radius, uint16_t color);

@@ -117,6 +117,74 @@ void TFTLCD::drawChar(uint16_t x, uint16_t y, char c,
   }
 }
 
+// draw a triangle!
+void TFTLCD::drawTriangle(uint16_t x0, uint16_t y0,
+			  uint16_t x1, uint16_t y1,
+			  uint16_t x2, uint16_t y2, uint16_t color)
+{
+  drawLine(x0, y0, x1, y1, color);
+  drawLine(x1, y1, x2, y2, color);
+  drawLine(x2, y2, x0, y0, color); 
+}
+
+void TFTLCD::fillTriangle ( int32_t x0, int32_t y0, int32_t x1, int32_t y1, int32_t x2, int32_t y2, uint16_t color)
+{
+  if (y0 > y1) {
+    swap(y0, y1); swap(x0, x1);
+  }
+  if (y1 > y2) {
+    swap(y2, y1); swap(x2, x1);
+  }
+  if (y0 > y1) {
+    swap(y0, y1); swap(x0, x1);
+  }
+
+  int32_t dx1, dx2, dx3; // Interpolation deltas
+  int32_t sx1, sx2, sy; // Scanline co-ordinates
+
+  sx2=(int32_t)x0 * (int32_t)1000; // Use fixed point math for x axis values
+  sx1 = sx2;
+  sy=y0;
+
+  // Calculate interpolation deltas
+  if (y1-y0 > 0) dx1=((x1-x0)*1000)/(y1-y0);
+    else dx1=0;
+  if (y2-y0 > 0) dx2=((x2-x0)*1000)/(y2-y0);
+    else dx2=0;
+  if (y2-y1 > 0) dx3=((x2-x1)*1000)/(y2-y1);
+    else dx3=0;
+
+  // Render scanlines (horizontal lines are the fastest rendering method)
+  if (dx1 > dx2)
+  {
+    for(; sy<=y1; sy++, sx1+=dx2, sx2+=dx1)
+    {
+      drawHorizontalLine(sx1/1000, sy, (sx2-sx1)/1000, color);
+    }
+    sx2 = x1*1000;
+    sy = y1;
+    for(; sy<=y2; sy++, sx1+=dx2, sx2+=dx3)
+    {
+      drawHorizontalLine(sx1/1000, sy, (sx2-sx1)/1000, color);
+    }
+  }
+  else
+  {
+    for(; sy<=y1; sy++, sx1+=dx1, sx2+=dx2)
+    {
+      drawHorizontalLine(sx1/1000, sy, (sx2-sx1)/1000, color);
+    }
+    sx1 = x1*1000;
+    sy = y1;
+    for(; sy<=y2; sy++, sx1+=dx3, sx2+=dx2)
+    {
+      drawHorizontalLine(sx1/1000, sy, (sx2-sx1)/1000, color);
+    }
+  }
+}
+
+
+
 // draw a rectangle
 void TFTLCD::drawRect(uint16_t x, uint16_t y, uint16_t w, uint16_t h, 
 		      uint16_t color) {
