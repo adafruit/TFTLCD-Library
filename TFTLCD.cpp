@@ -203,8 +203,11 @@ void TFTLCD::drawRoundRect(uint16_t x, uint16_t y, uint16_t w, uint16_t h, uint1
   drawHorizontalLine(x+r, y+h-1, w-2*r, color);
   drawVerticalLine(x, y+r, h-2*r, color);
   drawVerticalLine(x+w-1, y+r, h-2*r, color);
-
-  drawCircleHelper(x+w/2, y+w/2, r, (w - 2*r - 1)/2, (h - 2*r - 1)/2, 0xFFFF);
+  // draw four corners
+  drawCircleHelper(x+r, y+r, r, 1, color);
+  drawCircleHelper(x+w-r-1, y+r, r, 2, color);
+  drawCircleHelper(x+w-r-1, y+h-r-1, r, 4, color);
+  drawCircleHelper(x+r, y+h-r-1, r, 8, color);
 }
 
 // fill a circle
@@ -239,11 +242,15 @@ void TFTLCD::fillCircle(uint16_t x0, uint16_t y0, uint16_t r, uint16_t color) {
 
 void TFTLCD::drawCircle(uint16_t x0, uint16_t y0, uint16_t r, 
 			uint16_t color) {
-  drawCircleHelper(x0, y0, r, 0, 0, color);
+  drawPixel(x0, y0+r, color);
+  drawPixel(x0, y0-r, color);
+  drawPixel(x0+r, y0, color);
+  drawPixel(x0-r, y0, color);
 
+  drawCircleHelper(x0, y0, r, 0xF, color);
 }
 
-void TFTLCD::drawCircleHelper(uint16_t x0, uint16_t y0, uint16_t r, uint16_t xspace, uint16_t yspace,
+void TFTLCD::drawCircleHelper(uint16_t x0, uint16_t y0, uint16_t r, uint8_t cornername,
 			uint16_t color) {
   int16_t f = 1 - r;
   int16_t ddF_x = 1;
@@ -251,12 +258,6 @@ void TFTLCD::drawCircleHelper(uint16_t x0, uint16_t y0, uint16_t r, uint16_t xsp
   int16_t x = 0;
   int16_t y = r;
 
-  if (xspace == 0) {
-    drawPixel(x0, y0+r, color);
-    drawPixel(x0, y0-r, color);
-    drawPixel(x0+r, y0, color);
-    drawPixel(x0-r, y0, color);
-  }
 
   while (x<y) {
     if (f >= 0) {
@@ -267,17 +268,19 @@ void TFTLCD::drawCircleHelper(uint16_t x0, uint16_t y0, uint16_t r, uint16_t xsp
     x++;
     ddF_x += 2;
     f += ddF_x;
-  
-    drawPixel(x0 + x + xspace, y0 + y + yspace, color);
-    drawPixel(x0 - x - xspace, y0 + y + yspace, color);
-    drawPixel(x0 + x + xspace, y0 - y - yspace, color);
-    drawPixel(x0 - x - xspace, y0 - y - yspace, color);
-    
-    drawPixel(x0 + y + xspace, y0 + x + yspace, color);
-    drawPixel(x0 - y - xspace, y0 + x + yspace, color);
-    drawPixel(x0 + y + xspace, y0 - x - yspace, color);
-    drawPixel(x0 - y - xspace, y0 - x - yspace, color);
-    
+    if (cornername & 0x4) {
+      drawPixel(x0 + x, y0 + y, color);
+      drawPixel(x0 + y, y0 + x, color);
+    } else if (cornername & 0x2) {
+      drawPixel(x0 + x, y0 - y, color);
+      drawPixel(x0 + y, y0 - x, color);
+    } else if (cornername & 0x8) {
+      drawPixel(x0 - y, y0 + x, color);
+      drawPixel(x0 - x, y0 + y, color);
+    } else if (cornername & 0x1) {
+      drawPixel(x0 - y, y0 - x, color);
+      drawPixel(x0 - x, y0 - y, color);
+    }
   }
 }
 

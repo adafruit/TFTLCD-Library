@@ -126,7 +126,7 @@ class TFTLCD : public Print {
   void setWriteDir(void);
   void setReadDir(void);
  private:
-  void drawCircleHelper(uint16_t x0, uint16_t y0, uint16_t r, uint16_t xs, uint16_t ys, uint16_t color);
+  void drawCircleHelper(uint16_t x0, uint16_t y0, uint16_t r, uint8_t corner, uint16_t color);
 
   void write8(uint8_t d);
   uint8_t read8(void);
