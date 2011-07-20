@@ -68,6 +68,8 @@ class TFTLCD : public Print {
  public:
   TFTLCD(uint8_t cs, uint8_t cd, uint8_t wr, uint8_t rd, uint8_t reset);
 
+  uint16_t Color565(uint8_t r, uint8_t g, uint8_t b);
+
   // drawing primitives!
   void drawPixel(uint16_t x, uint16_t y, uint16_t color);
   void fillScreen(uint16_t color);
@@ -127,6 +129,7 @@ class TFTLCD : public Print {
   void setReadDir(void);
  private:
   void drawCircleHelper(uint16_t x0, uint16_t y0, uint16_t r, uint8_t corner, uint16_t color);
+  void fillCircleHelper(uint16_t x0, uint16_t y0, uint16_t r, uint8_t corner, uint16_t delta, uint16_t color);
 
   void write8(uint8_t d);
   uint8_t read8(void);

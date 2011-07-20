@@ -183,7 +183,16 @@ void TFTLCD::fillTriangle ( int32_t x0, int32_t y0, int32_t x1, int32_t y1, int3
   }
 }
 
+uint16_t TFTLCD::Color565(uint8_t r, uint8_t g, uint8_t b) {
+  uint16_t c;
+  c = r >> 3;
+  c <<= 6;
+  c |= g >> 2;
+  c <<= 5;
+  c |= b >> 3;
 
+  return c;
+}
 
 // draw a rectangle
 void TFTLCD::drawRect(uint16_t x, uint16_t y, uint16_t w, uint16_t h, 
@@ -210,16 +219,35 @@ void TFTLCD::drawRoundRect(uint16_t x, uint16_t y, uint16_t w, uint16_t h, uint1
   drawCircleHelper(x+r, y+h-r-1, r, 8, color);
 }
 
+
+// fill a rounded rectangle
+void TFTLCD::fillRoundRect(uint16_t x, uint16_t y, uint16_t w, uint16_t h, uint16_t r,
+			   uint16_t color) {
+  // smarter version
+  fillRect(x+r, y, w-2*r, h, color);
+
+  // draw four corners
+  fillCircleHelper(x+w-r-1, y+r, r, 1, h-2*r-1, color);
+  fillCircleHelper(x+r, y+r, r, 2, h-2*r-1, color);
+}
+
 // fill a circle
 void TFTLCD::fillCircle(uint16_t x0, uint16_t y0, uint16_t r, uint16_t color) {
+  writeRegister(TFTLCD_ENTRY_MOD, 0x1030);
+  drawVerticalLine(x0, y0-r, 2*r+1, color);
+  fillCircleHelper(x0, y0, r, 3, 0, color);
+}
+
+
+// used to do circles and roundrects!
+void TFTLCD::fillCircleHelper(uint16_t x0, uint16_t y0, uint16_t r, uint8_t cornername, uint16_t delta,
+			uint16_t color) {
+
   int16_t f = 1 - r;
   int16_t ddF_x = 1;
   int16_t ddF_y = -2 * r;
   int16_t x = 0;
   int16_t y = r;
-
-  writeRegister(TFTLCD_ENTRY_MOD, 0x1030);
-  drawVerticalLine(x0, y0-r, 2*r+1, color);
 
   while (x<y) {
     if (f >= 0) {
@@ -231,12 +259,17 @@ void TFTLCD::fillCircle(uint16_t x0, uint16_t y0, uint16_t r, uint16_t color) {
     ddF_x += 2;
     f += ddF_x;
   
-    drawVerticalLine(x0+x, y0-y, 2*y+1, color);
-    drawVerticalLine(x0-x, y0-y, 2*y+1, color);
-    drawVerticalLine(x0+y, y0-x, 2*x+1, color);
-    drawVerticalLine(x0-y, y0-x, 2*x+1, color);
+    if (cornername & 0x1) {
+      drawVerticalLine(x0+x, y0-y, 2*y+1+delta, color);
+      drawVerticalLine(x0+y, y0-x, 2*x+1+delta, color);
+    }
+    if (cornername & 0x2) {
+      drawVerticalLine(x0-x, y0-y, 2*y+1+delta, color);
+      drawVerticalLine(x0-y, y0-x, 2*x+1+delta, color);
+    }
   }
 }
+
 
 // draw a circle outline
 
