@@ -304,13 +304,16 @@ void TFTLCD::drawCircleHelper(uint16_t x0, uint16_t y0, uint16_t r, uint8_t corn
     if (cornername & 0x4) {
       drawPixel(x0 + x, y0 + y, color);
       drawPixel(x0 + y, y0 + x, color);
-    } else if (cornername & 0x2) {
+    } 
+    if (cornername & 0x2) {
       drawPixel(x0 + x, y0 - y, color);
       drawPixel(x0 + y, y0 - x, color);
-    } else if (cornername & 0x8) {
+    }
+    if (cornername & 0x8) {
       drawPixel(x0 - y, y0 + x, color);
       drawPixel(x0 - x, y0 + y, color);
-    } else if (cornername & 0x1) {
+    }
+    if (cornername & 0x1) {
       drawPixel(x0 - y, y0 - x, color);
       drawPixel(x0 - x, y0 - y, color);
     }

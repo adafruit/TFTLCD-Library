@@ -71,6 +71,13 @@ void setup(void) {
   testfillcircles(10, MAGENTA);
   testdrawcircles(10, WHITE);
   delay(500); 
+  testtriangles();
+  delay(500); 
+  testfilltriangles();
+  delay(500); 
+  testRoundRect();
+  delay(500); 
+  testFillRoundRect();
 }
 
 void loop(void) {
@@ -81,6 +88,46 @@ void loop(void) {
   }
 }
 
+
+
+void testFillRoundRect() {
+  tft.fillScreen(BLACK);
+  
+  for (uint16_t x=tft.width(); x > 20 ; x-=6) {
+    tft.fillRoundRect(tft.width()/2 -x/2, tft.height()/2 -x/2 , x, x, x/8,  tft.Color565(0, x, 0));
+ }
+}
+
+void testRoundRect() {
+  tft.fillScreen(BLACK);
+  
+  for (uint16_t x=0; x < tft.width(); x+=6) {
+    tft.drawRoundRect(tft.width()/2 -x/2, tft.height()/2 -x/2 , x, x, x/8, tft.Color565(x, 0, 0));
+ }
+}
+
+void testtriangles() {
+  tft.fillScreen(BLACK);
+  for (uint16_t i=0; i<tft.width()/2; i+=5) {
+    tft.drawTriangle(tft.width()/2, tft.height()/2-i,
+                     tft.width()/2-i, tft.height()/2+i,
+                     tft.width()/2+i, tft.height()/2+i, tft.Color565(0, 0, i));
+  }
+}
+
+void testfilltriangles() {
+  tft.fillScreen(BLACK);
+  
+  for (uint16_t i=tft.width()/2; i>10; i-=5) {
+    tft.fillTriangle(tft.width()/2, tft.height()/2-i,
+                     tft.width()/2-i, tft.height()/2+i,
+                     tft.width()/2+i, tft.height()/2+i, 
+                     tft.Color565(0, i, i));
+    tft.drawTriangle(tft.width()/2, tft.height()/2-i,
+                     tft.width()/2-i, tft.height()/2+i,
+                     tft.width()/2+i, tft.height()/2+i, tft.Color565(i, i, 0));    
+  }
+}
 void testtext(uint16_t color) {
   tft.fillScreen(BLACK);
   tft.setCursor(0, 20);
