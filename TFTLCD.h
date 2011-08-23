@@ -4,7 +4,7 @@
 #include <WProgram.h>
 
 // comment or uncomment the next line for special pinout!
-//#define USE_ADAFRUIT_SHIELD_PINOUT
+#define USE_ADAFRUIT_SHIELD_PINOUT
 
 
 // register names from Peter Barrett's Microtouch code
@@ -127,11 +127,14 @@ class TFTLCD : public Print {
 
   void setWriteDir(void);
   void setReadDir(void);
+
+
+  void write8(uint8_t d);
+
  private:
   void drawCircleHelper(uint16_t x0, uint16_t y0, uint16_t r, uint8_t corner, uint16_t color);
   void fillCircleHelper(uint16_t x0, uint16_t y0, uint16_t r, uint8_t corner, uint16_t delta, uint16_t color);
 
-  void write8(uint8_t d);
   uint8_t read8(void);
 
   uint8_t _cs, _cd, _reset, _wr, _rd;

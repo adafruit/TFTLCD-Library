@@ -3,7 +3,7 @@
 // Graphics library by ladyada/adafruit with init code from Rossum 
 // MIT license
 
-#ifdef USE_ADAFRUIT_SHIELD_PINOUT
+//#ifdef USE_ADAFRUIT_SHIELD_PINOUT
 
 // special defines for the dataport
  #define DATAPORT1 PORTD
@@ -17,12 +17,8 @@
  #define DATA1_MASK 0xD0
  #define DATA2_MASK 0x2F
 
- #define MEGA_DATAPORT1 PORTH
- #define MEGA_DATAPORT2 PORTB
- #define MEGA_DATAPORT3 PORTB
-#define MEGA_DATA1_MASK 
+// for mega & shield usage, we just hardcoded it (its messy)
 
-// TODO: add mega pinout
 #else
  // for the breakout board tutorial, two ports are used :/
  #define DATAPORT1 PORTD
@@ -689,7 +685,14 @@ inline void TFTLCD::setWriteDir(void) {
   DATADDR2 |= DATA2_MASK;
   DATADDR1 |= DATA1_MASK;
 #elif defined(__AVR_ATmega1281__) || defined(__AVR_ATmega2561__) || defined(__AVR_ATmega2560__) || defined(__AVR_ATmega1280__) 
+
+  #ifdef USE_ADAFRUIT_SHIELD_PINOUT
+  DDRH |= 0x78;
+  DDRB |= 0xB0;
+  DDRG |= _BV(5);
+  #else
   MEGA_DATADDR = 0xFF;
+  #endif
 #else
   #error "No pins defined!"
 #endif
@@ -700,7 +703,14 @@ inline void TFTLCD::setReadDir(void) {
   DATADDR2 &= ~DATA2_MASK;
   DATADDR1 &= ~DATA1_MASK;
 #elif defined(__AVR_ATmega1281__) || defined(__AVR_ATmega2561__) || defined(__AVR_ATmega2560__) || defined(__AVR_ATmega1280__) 
+
+  #ifdef USE_ADAFRUIT_SHIELD_PINOUT
+  DDRH &= ~0x78;
+  DDRB &= ~0xB0;
+  DDRG &= ~_BV(5);
+  #else
   MEGA_DATADDR = 0;
+  #endif
 #else
   #error "No pins defined!"
 #endif
@@ -716,7 +726,28 @@ inline void TFTLCD::write8(uint8_t d) {
   
 #elif defined(__AVR_ATmega1281__) || defined(__AVR_ATmega2561__) || defined(__AVR_ATmega2560__) || defined(__AVR_ATmega1280__) 
 
-  MEGA_DATAPORT = d;  
+
+#ifdef USE_ADAFRUIT_SHIELD_PINOUT
+
+  // bit 6/7 (PH3 & 4)
+  // first two bits 0 & 1 (PH5 & 6)
+  PORTH &= ~(0x78);
+  PORTH |= ((d&0xC0) >> 3) | ((d&0x3) << 5);
+
+  // bits 2 & 3 (PB4 & PB5)
+  // bit 5 (PB7)
+  PORTB &= ~(0xB0); 
+  PORTB |= ((d & 0x2C) << 2);
+
+  // bit 4  (PG5)
+  if (d & _BV(4))
+    PORTG |= _BV(5);
+  else
+    PORTG &= ~_BV(5);
+
+  #else
+     MEGA_DATAPORT = d;  
+  #endif
 
 #else
   #error "No pins defined!"
@@ -732,7 +763,23 @@ inline uint8_t TFTLCD::read8(void) {
 
 #elif defined(__AVR_ATmega1281__) || defined(__AVR_ATmega2561__) || defined(__AVR_ATmega2560__)  || defined(__AVR_ATmega1280__) 
 
+#ifdef USE_ADAFRUIT_SHIELD_PINOUT
+
+  // bit 6/7 (PH3 & 4)
+  // first two bits 0 & 1 (PH5 & 6)
+ d = (PINH & 0x60) >> 5;
+ d |= (PINH & 0x18) << 3;
+
+  // bits 2 & 3 & 5 (PB4 & PB5, PB7)
+ d |= (PINB & 0xB0) >> 2;
+
+  // bit 4  (PG5)
+  if (PING & _BV(5))
+    d |= _BV(4);
+
+#else
  d = MEGA_DATAPIN;  
+#endif
 
 #else
 
