@@ -3,8 +3,7 @@
 // Graphics library by ladyada/adafruit with init code from Rossum 
 // MIT license
 
-//#ifdef USE_ADAFRUIT_SHIELD_PINOUT
-
+#ifdef USE_ADAFRUIT_SHIELD_PINOUT
 // special defines for the dataport
  #define DATAPORT1 PORTD
  #define DATAPIN1 PIND

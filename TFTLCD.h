@@ -4,7 +4,7 @@
 #include <WProgram.h>
 
 // comment or uncomment the next line for special pinout!
-#define USE_ADAFRUIT_SHIELD_PINOUT
+//#define USE_ADAFRUIT_SHIELD_PINOUT
 
 
 // register names from Peter Barrett's Microtouch code
