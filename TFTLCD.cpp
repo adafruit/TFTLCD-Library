@@ -74,7 +74,11 @@ void TFTLCD::setTextColor(uint16_t c) {
   textcolor = c;
 }
 
+#if ARDUINO >= 100
+size_t TFTLCD::write(uint8_t c) {
+#else
 void TFTLCD::write(uint8_t c) {
+#endif
   if (c == '\n') {
     cursor_y += textsize*8;
     cursor_x = 0;
@@ -84,6 +88,9 @@ void TFTLCD::write(uint8_t c) {
     drawChar(cursor_x, cursor_y, c, textcolor, textsize);
     cursor_x += textsize*6;
   }
+#if ARDUINO >= 100
+  return 1;
+#endif
 }
 
 void TFTLCD::drawString(uint16_t x, uint16_t y, char *c, 
