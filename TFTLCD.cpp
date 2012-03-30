@@ -680,7 +680,7 @@ void TFTLCD::reset(void) {
 }
 
 inline void TFTLCD::setWriteDir(void) {
-#if defined(__AVR_ATmega168__) || defined(__AVR_ATmega328P__) || defined (__AVR_ATmega328) || (__AVR_ATmega8__)
+#if defined(__AVR_ATmega168__) || defined(__AVR_ATmega328P__) || defined (__AVR_ATmega328__) || defined(__AVR_ATmega8__)
   DATADDR2 |= DATA2_MASK;
   DATADDR1 |= DATA1_MASK;
 #elif defined(__AVR_ATmega1281__) || defined(__AVR_ATmega2561__) || defined(__AVR_ATmega2560__) || defined(__AVR_ATmega1280__) 
