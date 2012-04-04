@@ -33,9 +33,10 @@ For Mega's use pins 22 thru 29 (on the double header at the end)
 #define YELLOW          0xFFE0 
 #define WHITE           0xFFFF
 
-#include "TFTLCD.h"
+#include "Adafruit_TFTLCD.h"
+#include "Adafruit_GFX.h"
 
-TFTLCD tft(LCD_CS, LCD_CD, LCD_WR, LCD_RD, LCD_RESET);
+Adafruit_TFTLCD tft(LCD_CS, LCD_CD, LCD_WR, LCD_RD, LCD_RESET);
 
 void setup(void) {
   Serial.begin(9600);
@@ -54,7 +55,7 @@ void setup(void) {
     while (1);
   }  
  
-  tft.initDisplay();
+  tft.begin();
   
   tft.fillScreen(BLACK);
 
@@ -163,8 +164,8 @@ void rotateFastline(void) {
     tft.fillScreen(BLACK);
     Serial.println(tft.getRotation(), DEC);
   
-    tft.drawHorizontalLine(0, 20, tft.width(), RED);
-    tft.drawVerticalLine(20, 0, tft.height(), BLUE);
+    tft.drawFastHLine(0, 20, tft.width(), RED);
+    tft.drawFastVLine(20, 0, tft.height(), BLUE);
   
     while (!Serial.available());
     Serial.read();  Serial.read();  Serial.read();

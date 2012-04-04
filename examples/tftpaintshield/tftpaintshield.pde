@@ -1,4 +1,5 @@
-#include "TFTLCD.h"
+#include "Adafruit_GFX.h"
+#include "Adafruit_TFTLCD.h"
 #include "TouchScreen.h"
 
 #if not defined USE_ADAFRUIT_SHIELD_PINOUT 
@@ -37,7 +38,7 @@ TouchScreen ts = TouchScreen(XP, YP, XM, YM, 300);
 #define WHITE           0xFFFF
 
 
-TFTLCD tft(LCD_CS, LCD_CD, LCD_WR, LCD_RD, 0);
+Adafruit_TFTLCD tft(LCD_CS, LCD_CD, LCD_WR, LCD_RD, 0);
 
 #define BOXSIZE 40
 #define PENRADIUS 4
@@ -60,7 +61,7 @@ void setup(void) {
     while (1);
   }
 
-  tft.initDisplay(); 
+  tft.begin(); 
   tft.fillScreen(BLACK);
   
   tft.fillRect(0, 0, BOXSIZE, BOXSIZE, RED);
