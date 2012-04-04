@@ -1,4 +1,5 @@
-#include "TFTLCD.h"
+#include "Adafruit_GFX.h"
+#include "Adafruit_TFTLCD.h"
 #include "TouchScreen.h"
 
 /* For the 8 data pins:
@@ -49,7 +50,7 @@ TouchScreen ts = TouchScreen(XP, YP, XM, YM, 300);
 
 
 
-TFTLCD tft(LCD_CS, LCD_CD, LCD_WR, LCD_RD, LCD_RESET);
+Adafruit_TFTLCD tft(LCD_CS, LCD_CD, LCD_WR, LCD_RD, LCD_RESET);
 
 #define BOXSIZE 40
 #define PENRADIUS 3
@@ -72,7 +73,7 @@ void setup(void) {
     while (1);
   }
 
-  tft.initDisplay(); 
+  tft.begin(); 
   tft.fillScreen(BLACK);
   
   tft.fillRect(0, 0, BOXSIZE, BOXSIZE, RED);

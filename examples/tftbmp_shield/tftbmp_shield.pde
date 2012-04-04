@@ -1,6 +1,7 @@
 #include <SD.h>
 #include <SPI.h>
-#include "TFTLCD.h"
+#include "Adafruit_GFX.h"
+#include "Adafruit_TFTLCD.h"
 
 #if not defined USE_ADAFRUIT_SHIELD_PINOUT 
  #error "For use with the shield, make sure to #define USE_ADAFRUIT_SHIELD_PINOUT in the TFTLCD.h library file"
@@ -18,7 +19,7 @@
 // There are examples in the sketch folder
 
 // our TFT wiring
-TFTLCD tft(LCD_CS, LCD_CD, LCD_WR, LCD_RD, 0);
+Adafruit_TFTLCD tft(LCD_CS, LCD_CD, LCD_WR, LCD_RD, 0);
 
 // the file itself
 File bmpFile;
@@ -61,7 +62,7 @@ void setup()
     while (1);
   }  
  
-  tft.initDisplay();
+  tft.begin();
   // the image is a landscape, so get into landscape mode
   tft.setRotation(1);
 
@@ -247,5 +248,4 @@ uint32_t read32(File f) {
   d |= b;
   return d;
 }
-
 
