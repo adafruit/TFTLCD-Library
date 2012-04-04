@@ -28,10 +28,11 @@ For Mega's use pins 22 thru 29 (on the double header at the end)
 // In the SD card, place 24 bit color BMP files (be sure they are 24-bit!)
 // There are examples in the sketch folder
 
-#include "TFTLCD.h"
+#include "Adafruit_GFX.h"
+#include "Adafruit_TFTLCD.h"
 
 // our TFT wiring
-TFTLCD tft(LCD_CS, LCD_CD, LCD_WR, LCD_RD, 0);
+Adafruit_TFTLCD tft(LCD_CS, LCD_CD, LCD_WR, LCD_RD, 0);
 
 // the file itself
 File bmpFile;
@@ -59,7 +60,7 @@ void setup()
     while (1);
   }  
  
-  tft.initDisplay();
+  tft.begin();
   
   Serial.print("Initializing SD card...");
   pinMode(10, OUTPUT);
@@ -269,5 +270,4 @@ uint32_t read32(File f) {
   d |= b;
   return d;
 }
-
 
