@@ -1,6 +1,7 @@
 // The control pins can connect to any pins but we'll use the 
 // analog lines since that means we can double up the pins
 // with the touch screen (see the TFT paint example)
+
 #define LCD_CS A3    // Chip Select goes to Analog 3
 #define LCD_CD A2    // Command/Data goes to Analog 2
 #define LCD_WR A1    // LCD Write goes to Analog 1
@@ -33,9 +34,11 @@ For Mega's use pins 22 thru 29 (on the double header at the end)
 #define YELLOW          0xFFE0 
 #define WHITE           0xFFFF
 
-#include "TFTLCD.h"
+#include "Adafruit_TFTLCD.h"
+#include <Adafruit_GFX.h>
 
-TFTLCD tft(LCD_CS, LCD_CD, LCD_WR, LCD_RD, LCD_RESET);
+
+Adafruit_TFTLCD tft(LCD_CS, LCD_CD, LCD_WR, LCD_RD, LCD_RESET);
 
 void setup(void) {
   Serial.begin(9600);
@@ -55,13 +58,19 @@ void setup(void) {
     while (1);
   }  
  
-  tft.initDisplay();
+  tft.begin();
   
+  uint32_t time = millis();
   testtext(RED);
+  Serial.println(millis() - time);
   delay(2000);
+  time = millis();
   testlines(CYAN);
+  Serial.println(millis() - time);
   delay(500);
+  time = millis();
   testfastlines(RED, BLUE);
+  Serial.println(millis() - time);
   delay(500);
   testdrawrects(GREEN);
   delay(500);
@@ -78,6 +87,7 @@ void setup(void) {
   testRoundRect();
   delay(500); 
   testFillRoundRect();
+  
 }
 
 void loop(void) {
@@ -176,10 +186,10 @@ void testdrawrects(uint16_t color) {
 void testfastlines(uint16_t color1, uint16_t color2) {
    tft.fillScreen(BLACK);
    for (uint16_t y=0; y < tft.height(); y+=5) {
-     tft.drawHorizontalLine(0, y, tft.width(), color1);
+     tft.drawFastHLine(0, y, tft.width(), color1);
    }
    for (uint16_t x=0; x < tft.width(); x+=5) {
-     tft.drawVerticalLine(x, 0, tft.height(), color2);
+     tft.drawFastVLine(x, 0, tft.height(), color2);
    }
   
 }
