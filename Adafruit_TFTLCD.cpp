@@ -50,7 +50,6 @@ static volatile uint8_t *wrportreg;
 #endif
 
 
-#include "glcdfont.c"
 #include <avr/pgmspace.h>
 #include "pins_arduino.h"
 #include "wiring_private.h"

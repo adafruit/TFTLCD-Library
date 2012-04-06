@@ -1,13 +1,11 @@
 // Graphics library by ladyada/adafruit with init code from Rossum 
 // MIT license
 
-#include <Adafruit_GFX.h>
 #if ARDUINO >= 100
  #include "Arduino.h"
 #else
  #include "WProgram.h"
 #endif
-
 #include <Adafruit_GFX.h>
 
 // comment or uncomment the next line for special pinout!
