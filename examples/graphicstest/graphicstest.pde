@@ -1,7 +1,9 @@
+#include "Adafruit_TFTLCD.h"
+#include <Adafruit_GFX.h>
+
 // The control pins can connect to any pins but we'll use the 
 // analog lines since that means we can double up the pins
 // with the touch screen (see the TFT paint example)
-
 #define LCD_CS A3    // Chip Select goes to Analog 3
 #define LCD_CD A2    // Command/Data goes to Analog 2
 #define LCD_WR A1    // LCD Write goes to Analog 1
@@ -34,17 +36,19 @@ For Mega's use pins 22 thru 29 (on the double header at the end)
 #define YELLOW          0xFFE0 
 #define WHITE           0xFFFF
 
-#include "Adafruit_TFTLCD.h"
-#include <Adafruit_GFX.h>
-
 
 Adafruit_TFTLCD tft(LCD_CS, LCD_CD, LCD_WR, LCD_RD, LCD_RESET);
 
 void setup(void) {
   Serial.begin(9600);
   Serial.println("8 Bit LCD test!");
-  
-  
+
+#ifdef USE_ADAFRUIT_SHIELD_PINOUT
+  Serial.println("Using Adafruit 2.8 inch TFT Arduino Shield Pinout");
+#else
+  Serial.println("Using Adafruit 2.8 inch TFT Breakout Pinout");
+#endif
+
   tft.reset();
   
   uint16_t identifier = tft.readRegister(0x0);
@@ -52,13 +56,15 @@ void setup(void) {
     Serial.println("Found ILI9325");
   } else if (identifier == 0x9328) {
     Serial.println("Found ILI9328");
+  } else if (identifier == 0x7575) {
+    Serial.println("Found HX8347G");
   } else {
     Serial.print("Unknown driver chip ");
     Serial.println(identifier, HEX);
     while (1);
   }  
  
-  tft.begin();
+  tft.begin(identifier);
   
   uint32_t time = millis();
   testtext(RED);

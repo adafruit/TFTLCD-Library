@@ -104,12 +104,12 @@ class Adafruit_TFTLCD : public Adafruit_GFX {
   /* low level */
 
   void writeData(uint16_t d);
-  void writeData8(uint8_t d);
   void writeCommand(uint16_t c);
   void writeCommand8(uint8_t c);
   uint16_t readData(void);
   uint16_t readRegister(uint16_t addr);
-  void writeRegister(uint16_t addr, uint16_t data);
+  void writeRegister8(uint8_t a, uint8_t d);
+  void writeRegister16(uint16_t addr, uint16_t data);
 
   static const uint16_t TFTWIDTH = 240;
   static const uint16_t TFTHEIGHT = 320;
