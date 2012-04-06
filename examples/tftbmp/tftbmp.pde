@@ -60,7 +60,7 @@ void setup()
     while (1);
   }  
  
-  tft.begin();
+  tft.begin(identifier);
   
   Serial.print("Initializing SD card...");
   pinMode(10, OUTPUT);

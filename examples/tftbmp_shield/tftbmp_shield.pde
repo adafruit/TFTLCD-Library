@@ -132,16 +132,16 @@ void bmpdraw(File f, int x, int y) {
     // bitmaps are stored with the BOTTOM line first so we have to move 'up'
 
     if (tft.getRotation() == 3) {
-      tft.writeRegister(TFTLCD_ENTRY_MOD, 0x1028);
+      tft.writeRegister16(ILI932X_ENTRY_MOD, 0x1028);
       tft.goTo(x+i, y); 
     } else if  (tft.getRotation() == 2) {
-      tft.writeRegister(TFTLCD_ENTRY_MOD, 0x1020);
+      tft.writeRegister16(ILI932X_ENTRY_MOD, 0x1020);
       tft.goTo(x+bmpWidth, y+i); 
     } else if  (tft.getRotation() == 1) {
-      tft.writeRegister(TFTLCD_ENTRY_MOD, 0x1018);
+      tft.writeRegister16(ILI932X_ENTRY_MOD, 0x1018);
       tft.goTo(x+bmpHeight-1-i, y); 
     } else if  (tft.getRotation() == 0) {
-      tft.writeRegister(TFTLCD_ENTRY_MOD, 0x1030);
+      tft.writeRegister16(ILI932X_ENTRY_MOD, 0x1030);
       tft.goTo(x, y+bmpHeight-i); 
     }
     
@@ -173,7 +173,7 @@ void bmpdraw(File f, int x, int y) {
       tft.writeData(p);
     }
   }
-  tft.writeRegister(TFTLCD_ENTRY_MOD, 0x1030);
+  tft.writeRegister16(ILI932X_ENTRY_MOD, 0x1030);
   Serial.print(millis() - time, DEC);
   Serial.println(" ms");
 }
@@ -248,4 +248,3 @@ uint32_t read32(File f) {
   d |= b;
   return d;
 }
-

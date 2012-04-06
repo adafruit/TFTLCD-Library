@@ -55,7 +55,7 @@ void setup(void) {
     while (1);
   }  
  
-  tft.begin();
+  tft.begin(identifier);
   
   tft.fillScreen(BLACK);
 

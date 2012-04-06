@@ -73,7 +73,7 @@ void setup(void) {
     while (1);
   }
 
-  tft.begin(); 
+  tft.begin(identifier); 
   tft.fillScreen(BLACK);
   
   tft.fillRect(0, 0, BOXSIZE, BOXSIZE, RED);
