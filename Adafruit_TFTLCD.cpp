@@ -57,7 +57,7 @@ static volatile uint8_t *wrportreg;
 
 
 void Adafruit_TFTLCD::goTo(int x, int y) {
-  if (driver == 0x9325 || driver == 0x0328) {
+  if (driver == 0x9325 || driver == 0x9328) {
     writeRegister16(0x0020, x);     // GRAM Address Set (Horizontal Address) (R20h)
     writeRegister16(0x0021, y);     // GRAM Address Set (Vertical Address) (R21h)
     writeCommand(0x0022);            // Write Data to GRAM (R22h)
