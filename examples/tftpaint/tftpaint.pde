@@ -1,6 +1,6 @@
-#include "Adafruit_GFX.h"
-#include "Adafruit_TFTLCD.h"
-#include "TouchScreen.h"
+#include <Adafruit_GFX.h>    // Core graphics library
+#include <Adafruit_TFTLCD.h> // Hardware-specific library
+#include <TouchScreen.h>
 
 /* For the 8 data pins:
 Duemilanove/Diecimila/UNO/etc ('168 and '328 chips) microcontoller:

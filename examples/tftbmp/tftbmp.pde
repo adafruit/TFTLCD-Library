@@ -1,4 +1,7 @@
+#include <Adafruit_GFX.h>    // Core graphics library
+#include <Adafruit_TFTLCD.h> // Hardware-specific library
 #include <SD.h>
+
 // The control pins can connect to any pins but we'll use the 
 // analog lines since that means we can double up the pins
 // with the touch screen (see the TFT paint example)
@@ -27,9 +30,6 @@ For Mega's use pins 22 thru 29 (on the double header at the end)
 
 // In the SD card, place 24 bit color BMP files (be sure they are 24-bit!)
 // There are examples in the sketch folder
-
-#include "Adafruit_GFX.h"
-#include "Adafruit_TFTLCD.h"
 
 // our TFT wiring
 Adafruit_TFTLCD tft(LCD_CS, LCD_CD, LCD_WR, LCD_RD, 0);

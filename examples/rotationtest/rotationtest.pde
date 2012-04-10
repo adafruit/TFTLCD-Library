@@ -1,3 +1,6 @@
+#include <Adafruit_GFX.h>    // Core graphics library
+#include <Adafruit_TFTLCD.h> // Hardware-specific library
+
 // The control pins can connect to any pins but we'll use the 
 // analog lines since that means we can double up the pins
 // with the touch screen (see the TFT paint example)
@@ -32,9 +35,6 @@ For Mega's use pins 22 thru 29 (on the double header at the end)
 #define MAGENTA         0xF81F
 #define YELLOW          0xFFE0 
 #define WHITE           0xFFFF
-
-#include "Adafruit_TFTLCD.h"
-#include "Adafruit_GFX.h"
 
 Adafruit_TFTLCD tft(LCD_CS, LCD_CD, LCD_WR, LCD_RD, LCD_RESET);
 

@@ -87,12 +87,12 @@ class Adafruit_TFTLCD : public Adafruit_GFX {
   uint16_t Color565(uint8_t r, uint8_t g, uint8_t b);
 
   // drawing primitives!
-  void drawPixel(uint16_t x, uint16_t y, uint16_t color);
+  void drawPixel(int16_t x, int16_t y, uint16_t color);
   void fillScreen(uint16_t color);
-  void drawFastVLine(uint16_t x0, uint16_t y0, uint16_t length, uint16_t color);
-  void drawFastHLine(uint16_t x0, uint16_t y0, uint16_t length, uint16_t color);
+  void drawFastVLine(int16_t x0, int16_t y0, int16_t length, uint16_t color);
+  void drawFastHLine(int16_t x0, int16_t y0, int16_t length, uint16_t color);
 
-  void fillRect(uint16_t x0, uint16_t y0, uint16_t w, uint16_t h, uint16_t color);
+  void fillRect(int16_t x0, int16_t y0, int16_t w, int16_t h, uint16_t color);
 
   // commands
   void begin(uint16_t id = 0x9325);
@@ -121,7 +121,7 @@ class Adafruit_TFTLCD : public Adafruit_GFX {
  private:
   uint16_t driver;
 
-  void drawFastLine(uint16_t x0, uint16_t y0, uint16_t l, uint16_t color, uint8_t flag);
+  void drawFastLine(int16_t x0, int16_t y0, int16_t l, uint16_t color, uint8_t flag);
   uint8_t read8(void);
 
   uint8_t _cs, _cd, _reset, _wr, _rd;

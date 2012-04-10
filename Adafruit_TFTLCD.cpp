@@ -70,7 +70,7 @@ void Adafruit_TFTLCD::goTo(int x, int y) {
     writeRegister8(HX8347G_COLADDREND2, 0);
     writeRegister8(HX8347G_COLADDREND1, TFTWIDTH-1);
     writeRegister8(HX8347G_ROWADDREND2, (TFTHEIGHT-1)>>8);
-    writeRegister8(HX8347G_ROWADDREND1, (TFTHEIGHT-1));
+    writeRegister8(HX8347G_ROWADDREND1, (TFTHEIGHT-1)&0xFF);
     writeCommand(0x0022);            // Write Data to GRAM (R22h)
   }
 }
@@ -88,7 +88,7 @@ uint16_t Adafruit_TFTLCD::Color565(uint8_t r, uint8_t g, uint8_t b) {
 }
 
 // fill a rectangle
-void Adafruit_TFTLCD::fillRect(uint16_t x, uint16_t y, uint16_t w, uint16_t h, 
+void Adafruit_TFTLCD::fillRect(int16_t x, int16_t y, int16_t w, int16_t h, 
 		      uint16_t fillcolor) {
   // smarter version
   while (h--)
@@ -96,20 +96,20 @@ void Adafruit_TFTLCD::fillRect(uint16_t x, uint16_t y, uint16_t w, uint16_t h,
 }
 
 
-void Adafruit_TFTLCD::drawFastVLine(uint16_t x, uint16_t y, uint16_t length, uint16_t color)
+void Adafruit_TFTLCD::drawFastVLine(int16_t x, int16_t y, int16_t length, uint16_t color)
 {
   if (x >= _width) return;
 
   drawFastLine(x,y,length,color,1);
 }
 
-void Adafruit_TFTLCD::drawFastHLine(uint16_t x, uint16_t y, uint16_t length, uint16_t color)
+void Adafruit_TFTLCD::drawFastHLine(int16_t x, int16_t y, int16_t length, uint16_t color)
 {
   if (y >= _height) return;
   drawFastLine(x,y,length,color,0);
 }
 
-void Adafruit_TFTLCD::drawFastLine(uint16_t x, uint16_t y, uint16_t length, 
+void Adafruit_TFTLCD::drawFastLine(int16_t x, int16_t y, int16_t length, 
 			  uint16_t color, uint8_t rotflag)
 {
   uint16_t newentrymod;
@@ -220,8 +220,10 @@ void Adafruit_TFTLCD::fillScreen(uint16_t color) {
   *portOutputRegister(csport) |= cspin;    //digitalWrite(_cs, HIGH);
 }
 
-void Adafruit_TFTLCD::drawPixel(uint16_t x, uint16_t y, uint16_t color)
+void Adafruit_TFTLCD::drawPixel(int16_t x, int16_t y, uint16_t color)
 {
+  if ((x >= _width) || (y >= _height)) return;
+
   // check rotation, move pixel around if necessary
   switch (rotation) {
   case 1:
@@ -238,8 +240,6 @@ void Adafruit_TFTLCD::drawPixel(uint16_t x, uint16_t y, uint16_t color)
     break;
   }
     
-  if ((x >= TFTWIDTH) || (y >= TFTHEIGHT)) return;
-
   if (driver == 0x9328 || driver == 0x9325) {
     writeRegister16(ILI932X_GRAM_HOR_AD, x); // GRAM Address Set (Horizontal Address)
     writeRegister16(ILI932X_GRAM_VER_AD, y); // GRAM Address Set (Vertical Address)

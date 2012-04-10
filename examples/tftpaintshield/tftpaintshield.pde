@@ -1,6 +1,6 @@
-#include "Adafruit_GFX.h"
-#include "Adafruit_TFTLCD.h"
-#include "TouchScreen.h"
+#include <Adafruit_GFX.h>    // Core graphics library
+#include <Adafruit_TFTLCD.h> // Hardware-specific library
+#include <TouchScreen.h>
 
 #if not defined USE_ADAFRUIT_SHIELD_PINOUT 
  #error "For use with the shield, make sure to #define USE_ADAFRUIT_SHIELD_PINOUT in the TFTLCD.h library file"
