@@ -19,6 +19,7 @@ static volatile uint8_t *wrportreg;
  #define DATA1_MASK 0xD0
  #define DATA2_MASK 0x2F
 
+#if defined(__AVR_ATmega168__) || defined(__AVR_ATmega328P__) || defined (__AVR_ATmega328__) || defined(__AVR_ATmega8__)
  #define WRPORT PORTC
  #define RDPORT PORTC
  #define CSPORT PORTC
@@ -27,6 +28,16 @@ static volatile uint8_t *wrportreg;
  #define CDPIN  2
  #define CSPIN  3
  #define RDPIN  4
+#elif defined(__AVR_ATmega1281__) || defined(__AVR_ATmega2561__) || defined(__AVR_ATmega2560__) || defined(__AVR_ATmega1280__) 
+ #define WRPORT PORTF
+ #define RDPORT PORTF
+ #define CSPORT PORTF
+ #define CDPORT PORTF
+ #define WRPIN  1
+ #define CDPIN  2
+ #define CSPIN  3
+ #define RDPIN  0
+#endif 
 
 // for mega & shield usage, we just hardcoded it (its messy)
 
