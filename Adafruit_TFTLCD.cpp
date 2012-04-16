@@ -8,6 +8,8 @@ static volatile uint8_t *wrportreg;
 
 #ifdef USE_ADAFRUIT_SHIELD_PINOUT
 // special defines for the dataport
+
+// for mega & shield usage, we just hardcoded it (its messy)
  #define DATAPORT1 PORTD
  #define DATAPIN1 PIND
  #define DATADDR1 DDRD
@@ -27,7 +29,7 @@ static volatile uint8_t *wrportreg;
  #define WRPIN  1
  #define CDPIN  2
  #define CSPIN  3
- #define RDPIN  4
+ #define RDPIN  0
 #elif defined(__AVR_ATmega1281__) || defined(__AVR_ATmega2561__) || defined(__AVR_ATmega2560__) || defined(__AVR_ATmega1280__) 
  #define WRPORT PORTF
  #define RDPORT PORTF
@@ -39,7 +41,6 @@ static volatile uint8_t *wrportreg;
  #define RDPIN  0
 #endif 
 
-// for mega & shield usage, we just hardcoded it (its messy)
 
 #else
  // for the breakout board tutorial, two ports are used :/
