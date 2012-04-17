@@ -1,6 +1,9 @@
 // Graphics library by ladyada/adafruit with init code from Rossum 
 // MIT license
 
+#ifndef _ADAFRUIT_TFTLCD_H_
+#define _ADAFRUIT_TFTLCD_H_
+
 #if ARDUINO >= 100
  #include "Arduino.h"
 #else
@@ -129,3 +132,5 @@ class Adafruit_TFTLCD : public Adafruit_GFX {
   uint8_t csport, cdport, wrport, rdport;
   uint8_t cspin, cdpin, wrpin, rdpin;
 };
+
+#endif
