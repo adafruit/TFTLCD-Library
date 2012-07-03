@@ -56,13 +56,15 @@ void setup()
     Serial.println("Found ILI9325");
   } else if (identifier == 0x9328) {
     Serial.println("Found ILI9328");
+  } else if (identifier == 0x7575) {
+    Serial.println("Found HX8347G");
   } else {
     Serial.print("Unknown driver chip ");
     Serial.println(identifier, HEX);
     while (1);
   }  
  
-  tft.begin();
+  tft.begin(identifier);
   // the image is a landscape, so get into landscape mode
   tft.setRotation(1);
 
