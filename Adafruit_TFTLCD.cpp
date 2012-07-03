@@ -124,44 +124,44 @@ void Adafruit_TFTLCD::drawFastHLine(int16_t x, int16_t y, int16_t length, uint16
 void Adafruit_TFTLCD::drawFastLine(int16_t x, int16_t y, int16_t length, 
 			  uint16_t color, uint8_t rotflag)
 {
-  uint16_t newentrymod;
-  
-  switch (rotation) {
-  case 0:
-    if (rotflag)
-      newentrymod = 0x1028;   // we want a 'vertical line'
-    else 
-      newentrymod = 0x1030;   // we want a 'horizontal line'
-    break;
-  case 1:
-    swap(x, y);
-    // first up fix the X
-    x = TFTWIDTH - x - 1;
-    if (rotflag)
-      newentrymod = 0x1000;   // we want a 'vertical line'
-    else 
-      newentrymod = 0x1028;   // we want a 'horizontal line'
-    break;
-  case 2:
-    x = TFTWIDTH - x - 1;
-    y = TFTHEIGHT - y - 1;
-    if (rotflag)
-      newentrymod = 0x1008;   // we want a 'vertical line'
-    else 
-      newentrymod = 0x1020;   // we want a 'horizontal line'
-    break;
-  case 3:
-    swap(x,y);
-    y = TFTHEIGHT - y - 1;
-    if (rotflag)
-      newentrymod = 0x1030;   // we want a 'vertical line'
-    else 
-      newentrymod = 0x1008;   // we want a 'horizontal line'
-    break;
-  }
-  
   if ((driver == 0x9325) || (driver == 0x9328)) {
 
+    uint16_t newentrymod;
+    
+    switch (rotation) {
+    case 0:
+      if (rotflag)
+	newentrymod = 0x1028;   // we want a 'vertical line'
+      else 
+	newentrymod = 0x1030;   // we want a 'horizontal line'
+      break;
+    case 1:
+      swap(x, y);
+      // first up fix the X
+      x = TFTWIDTH - x - 1;
+      if (rotflag)
+	newentrymod = 0x1000;   // we want a 'vertical line'
+      else 
+	newentrymod = 0x1028;   // we want a 'horizontal line'
+      break;
+    case 2:
+      x = TFTWIDTH - x - 1;
+      y = TFTHEIGHT - y - 1;
+      if (rotflag)
+	newentrymod = 0x1008;   // we want a 'vertical line'
+      else 
+	newentrymod = 0x1020;   // we want a 'horizontal line'
+      break;
+    case 3:
+      swap(x,y);
+      y = TFTHEIGHT - y - 1;
+      if (rotflag)
+	newentrymod = 0x1030;   // we want a 'vertical line'
+      else 
+	newentrymod = 0x1008;   // we want a 'horizontal line'
+      break;
+    }
+    
     writeRegister16(ILI932X_ENTRY_MOD, newentrymod);
     
     writeRegister16(ILI932X_GRAM_HOR_AD, x); // GRAM Address Set (Horizontal Address) (R20h)
@@ -169,18 +169,43 @@ void Adafruit_TFTLCD::drawFastLine(int16_t x, int16_t y, int16_t length,
     writeCommand(ILI932X_RW_GRAM);  // Write Data to GRAM (R22h)
   }
   if (driver == 0x7575) {
+    uint16_t endx, endy;
+    if (rotation == 0) {
+      endx = x, endy = y;
+
+      if (rotflag) endy += length;
+      else	endx += length;
+    } else if (rotation == 1) {
+      swap(x, y);
+      // first up fix the X
+      x = TFTWIDTH - x - 1;
+      endx = x, endy = y;
+
+      if (rotflag) x -= (length-1);
+      else	endy += length;
+    } else if (rotation == 2) {
+      x = TFTWIDTH - x - 1;
+      y = TFTHEIGHT - y - 1;
+      endx = x, endy = y;
+
+      if (rotflag) y -= (length-1);
+      else         x -= (length-1);
+    } else if (rotation == 3) {
+      swap(x,y);
+      y = TFTHEIGHT - y - 1;
+      endx = x, endy = y;
+
+      if (rotflag) endx += (length-1);
+      else         y -= (length-1);
+    }
+    // Serial.print("("); Serial.print(x); Serial.print(", "); Serial.print(y); Serial.print(") -> ");
+
     writeRegister8(HX8347G_COLADDRSTART2, x>>8);
     writeRegister8(HX8347G_COLADDRSTART1, x);
     writeRegister8(HX8347G_ROWADDRSTART2, y>>8);
     writeRegister8(HX8347G_ROWADDRSTART1, y);
 
-    uint16_t endx = x, endy = y;
-    if (rotflag) {
-      endy += length;
-    } else {
-      endx += length;
-    }
-    
+    // Serial.print("("); Serial.print(endx); Serial.print(", "); Serial.print(endy); Serial.println(")");
     writeRegister8(HX8347G_COLADDREND2, endx>>8);
     writeRegister8(HX8347G_COLADDREND1, endx);
     writeRegister8(HX8347G_ROWADDREND2, endy>>8);
@@ -202,10 +227,11 @@ void Adafruit_TFTLCD::drawFastLine(int16_t x, int16_t y, int16_t length,
 
   // set back to default
   *portOutputRegister(csport) |= cspin;    //digitalWrite(_cs, HIGH);
-  writeRegister16(ILI932X_ENTRY_MOD, 0x1030);
 
   if (driver == 0x7575) {
     goTo(0,0);
+  } else {
+    writeRegister16(ILI932X_ENTRY_MOD, 0x1030);
   }
 }
 
