@@ -78,6 +78,8 @@
 #define HX8347G_ROWADDREND2 0x08
 #define HX8347G_ROWADDREND1 0x09
 
+#define HX8347G_MEMACCESS 0x16
+
 
 #define TFTLCD_DELAYCMD                 0xFF
 
@@ -91,6 +93,7 @@ class Adafruit_TFTLCD : public Adafruit_GFX {
 
   // drawing primitives!
   void drawPixel(int16_t x, int16_t y, uint16_t color);
+  uint16_t readPixel(int16_t x, int16_t y);
   void fillScreen(uint16_t color);
   void drawFastVLine(int16_t x0, int16_t y0, int16_t length, uint16_t color);
   void drawFastHLine(int16_t x0, int16_t y0, int16_t length, uint16_t color);
@@ -100,6 +103,7 @@ class Adafruit_TFTLCD : public Adafruit_GFX {
   // commands
   void begin(uint16_t id = 0x9325);
   void goTo(int x, int y);
+  void setWindow(int x1, int y1, int x2, int y2);
   void reset(void);
 
   /* low level */

@@ -86,6 +86,22 @@ void Adafruit_TFTLCD::goTo(int x, int y) {
     writeCommand(0x0022);            // Write Data to GRAM (R22h)
   }
 }
+void Adafruit_TFTLCD::setWindow(int x1, int y1, int x2, int y2) {
+ 
+  if (driver == 0x7575) {
+    writeRegister8(HX8347G_COLADDRSTART2, x1>>8);
+    writeRegister8(HX8347G_COLADDRSTART1, x1);
+    writeRegister8(HX8347G_ROWADDRSTART2, y1>>8);
+    writeRegister8(HX8347G_ROWADDRSTART1, y1);
+
+    writeRegister8(HX8347G_COLADDREND2, x2>>8);
+    writeRegister8(HX8347G_COLADDREND1, x2);
+    writeRegister8(HX8347G_ROWADDREND2, y2>>8);
+    writeRegister8(HX8347G_ROWADDREND1, y2);
+
+    writeCommand(0x0022);            // Write Data to GRAM (R22h)
+  }
+}
 
 
 uint16_t Adafruit_TFTLCD::Color565(uint8_t r, uint8_t g, uint8_t b) {
@@ -290,6 +306,40 @@ void Adafruit_TFTLCD::drawPixel(int16_t x, int16_t y, uint16_t color)
     writeCommand8(0x0022);            // Write Data to GRAM (R22h)
   }
   writeData(color);
+}
+
+uint16_t Adafruit_TFTLCD::readPixel(int16_t x, int16_t y)
+{
+  if ((x >= _width) || (y >= _height)) return 0;
+
+  // check rotation, move pixel around if necessary
+  switch (rotation) {
+  case 1:
+    swap(x, y);
+    x = TFTWIDTH - x - 1;
+    break;
+  case 2:
+    x = TFTWIDTH - x - 1;
+    y = TFTHEIGHT - y - 1;
+    break;
+  case 3:
+    swap(x, y);
+    y = TFTHEIGHT - y - 1;
+    break;
+  }
+    
+  if (driver == 0x9328 || driver == 0x9325) {
+    writeRegister16(ILI932X_GRAM_HOR_AD, x); // GRAM Address Set (Horizontal Address)
+    writeRegister16(ILI932X_GRAM_VER_AD, y); // GRAM Address Set (Vertical Address)
+    writeCommand(ILI932X_RW_GRAM);  // Read Data to GRAM
+  } else if (driver == 0x7575) {
+    writeRegister8(HX8347G_COLADDRSTART2, x >> 8);
+    writeRegister8(HX8347G_COLADDRSTART1, x & 0xFF);
+    writeRegister8(HX8347G_ROWADDRSTART2, y >> 8);
+    writeRegister8(HX8347G_ROWADDRSTART1, y & 0xFF);
+    writeCommand8(0x0022);            // Read Data from GRAM (R22h)
+  }
+  return readData();
 }
 
 

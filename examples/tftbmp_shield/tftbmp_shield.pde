@@ -43,6 +43,7 @@ void enableSPI(void) {
 }
 /******************************************/
 
+uint16_t identifier;
 void setup()
 {
 
@@ -51,7 +52,7 @@ void setup()
   tft.reset();
   
   // find the TFT display
-  uint16_t identifier = tft.readRegister(0x0);
+  identifier = tft.readRegister(0x0);
   if (identifier == 0x9325) {
     Serial.println("Found ILI9325");
   } else if (identifier == 0x9328) {
@@ -67,7 +68,7 @@ void setup()
   tft.begin(identifier);
   // the image is a landscape, so get into landscape mode
   tft.setRotation(1);
-
+  
   Serial.print("Initializing SD card...");
  
   if (!SD.begin(SD_CS)) {
@@ -133,19 +134,36 @@ void bmpdraw(File f, int x, int y) {
   for (i=0; i< bmpHeight; i++) {
     // bitmaps are stored with the BOTTOM line first so we have to move 'up'
 
-    if (tft.getRotation() == 3) {
-      tft.writeRegister16(ILI932X_ENTRY_MOD, 0x1028);
-      tft.goTo(x+i, y); 
-    } else if  (tft.getRotation() == 2) {
-      tft.writeRegister16(ILI932X_ENTRY_MOD, 0x1020);
-      tft.goTo(x+bmpWidth, y+i); 
-    } else if  (tft.getRotation() == 1) {
-      tft.writeRegister16(ILI932X_ENTRY_MOD, 0x1018);
-      tft.goTo(x+bmpHeight-1-i, y); 
-    } else if  (tft.getRotation() == 0) {
-      tft.writeRegister16(ILI932X_ENTRY_MOD, 0x1030);
-      tft.goTo(x, y+bmpHeight-i); 
+    if ((identifier == 0x9325) || (identifier == 0x9328)) {
+      if (tft.getRotation() == 3) {
+        tft.writeRegister16(ILI932X_ENTRY_MOD, 0x1028);
+        tft.goTo(x+i, y); 
+      } else if  (tft.getRotation() == 2) {
+        tft.writeRegister16(ILI932X_ENTRY_MOD, 0x1020);
+        tft.goTo(x+bmpWidth, y+i); 
+      } else if  (tft.getRotation() == 1) {
+        tft.writeRegister16(ILI932X_ENTRY_MOD, 0x1018);
+        tft.goTo(x+bmpHeight-1-i, y); 
+      } else if  (tft.getRotation() == 0) {
+        tft.writeRegister16(ILI932X_ENTRY_MOD, 0x1030);
+        tft.goTo(x, y+bmpHeight-i); 
+      }
+    } else if (identifier == 0x7575) {
+      if (tft.getRotation() == 3) {
+        tft.writeRegister8(HX8347G_MEMACCESS, 0x20);
+        tft.setWindow(x, y+i, 319, y+i); 
+      } else if  (tft.getRotation() == 2) {
+        tft.writeRegister8(HX8347G_MEMACCESS, 0x40);
+        tft.goTo(x, y+i); 
+      } else if  (tft.getRotation() == 1) {
+        tft.writeRegister8(HX8347G_MEMACCESS, 0xA0);
+        tft.setWindow(x, y+bmpHeight-1-i, 319, y+bmpHeight-i); 
+      } else if  (tft.getRotation() == 0) {
+        tft.writeRegister8(HX8347G_MEMACCESS, 0x0);
+        tft.goTo(x, y+bmpHeight-i-1); 
+      }
     }
+
     
     for (j=0; j<bmpWidth; j++) {
       // read more pixels
@@ -171,11 +189,12 @@ void bmpdraw(File f, int x, int y) {
       b >>= 3;
       p |= b;
      
-       // write out the 16 bits of color
+      // write out the 16 bits of color
       tft.writeData(p);
     }
   }
-  tft.writeRegister16(ILI932X_ENTRY_MOD, 0x1030);
+  if (identifier == 0x7575) tft.writeRegister8(HX8347G_MEMACCESS, 0x0);
+  else  tft.writeRegister16(ILI932X_ENTRY_MOD, 0x1030);
   Serial.print(millis() - time, DEC);
   Serial.println(" ms");
 }
