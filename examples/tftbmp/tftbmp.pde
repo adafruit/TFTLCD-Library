@@ -34,14 +34,6 @@ For Mega's use pins 22 thru 29 (on the double header at the end)
 // our TFT wiring
 Adafruit_TFTLCD tft(LCD_CS, LCD_CD, LCD_WR, LCD_RD, 0);
 
-// the file itself
-File bmpFile;
-
-// information we extract about the bitmap file
-int bmpWidth, bmpHeight;
-uint8_t bmpDepth, bmpImageoffset;
-
-
 void setup()
 {
   Serial.begin(9600);
@@ -65,211 +57,177 @@ void setup()
   tft.begin(identifier);
   
   Serial.print("Initializing SD card...");
-  pinMode(10, OUTPUT);
-
-  if (!SD.begin(10)) {
+  if (!SD.begin(SD_CS)) {
     Serial.println("failed!");
     return;
   }
-  Serial.println("SD OK!");
+  Serial.println("OK!");
 
-  bmpFile = SD.open("woof.bmp");
-
-  if (! bmpFile) {
-    Serial.println("didnt find image");
-    while (1);
-  }
-  
-  if (! bmpReadHeader(bmpFile)) { 
-     Serial.println("bad bmp");
-     return;
-  }
-  
-  Serial.print("image size "); 
-  Serial.print(bmpWidth, DEC);
-  Serial.print(", ");
-  Serial.println(bmpHeight, DEC);
- 
-  bmpdraw(bmpFile, 0, 0);
+  bmpDraw("woof.bmp", 0, 0);
   delay(1000);
-  
-  bmpFile.close();
-  bmpFile = SD.open("miniwoof.bmp");
-
-  if (! bmpFile) {
-    Serial.println("didnt find image");
-    while (1);
-  }
-  
-  if (! bmpReadHeader(bmpFile)) { 
-     Serial.println("bad bmp");
-     return;
-  }
-  
-  Serial.print("image size "); 
-  Serial.print(bmpWidth, DEC);
-  Serial.print(", ");
-  Serial.println(bmpHeight, DEC);
 }
 
 void loop()
 {
   tft.setRotation(0);
   tft.fillScreen(0);
-  bmpdraw(bmpFile, 50, 50);
+  bmpDraw("miniwoof.bmp", 50, 50);
   delay(1000);
 
   tft.setRotation(1);
   tft.fillScreen(0);
-  bmpdraw(bmpFile, 50, 50);
+  bmpDraw("miniwoof.bmp", 50, 50);
   delay(1000);
 
   tft.setRotation(2);
   tft.fillScreen(0);
-  bmpdraw(bmpFile, 50, 50);
+  bmpDraw("miniwoof.bmp", 50, 50);
   delay(1000);
 
   tft.setRotation(3);
   tft.fillScreen(0);
-  bmpdraw(bmpFile, 50, 50);
+  bmpDraw("miniwoof.bmp", 50, 50);
   delay(1000);
-
 }
 
 
-/*********************************************/
-// This procedure reads a bitmap and draws it to the screen
-// its sped up by reading many pixels worth of data at a time
-// instead of just one pixel at a time. increading the buffer takes
-// more RAM but makes the drawing a little faster. 20 pixels' worth
-// is probably a good place
+// This function opens a Windows Bitmap (BMP) file and
+// displays it at the given coordinates.  It's sped up
+// by reading many pixels worth of data at a time
+// (rather than pixel by pixel).  Increasing the buffer
+// size takes more of the Arduino's precious RAM but
+// makes loading a little faster.  20 pixels seems a
+// good balance.
 
 #define BUFFPIXEL 20
 
-void bmpdraw(File f, int x, int y) {
-  bmpFile.seek(bmpImageoffset);
-  
-  uint32_t time = millis();
-  uint16_t p;
-  uint8_t g, b;
-  int i, j;
-  
-  uint8_t sdbuffer[3 * BUFFPIXEL];  // 3 * pixels to buffer
-  uint8_t buffidx = 3*BUFFPIXEL;
-  
-  Serial.print("rotation = "); Serial.println(tft.getRotation(), DEC);
-  
-  for (i=0; i< bmpHeight; i++) {
-    // bitmaps are stored with the BOTTOM line first so we have to move 'up'
+void bmpDraw(char *filename, int x, int y) {
 
-    if (tft.getRotation() == 3) {
-      tft.goTo(x, y+bmpHeight-i); 
-    } else if  (tft.getRotation() == 2) {
-      tft.goTo(x+i, y);
-    } else if  (tft.getRotation() == 1) {
-        tft.goTo(x+bmpWidth-i, y+bmpHeight); 
-    } else if  (tft.getRotation() == 0) {
-      tft.goTo(x+bmpWidth, y+i); 
-    }
-    
-    for (j=0; j<bmpWidth; j++) {
-      // read more pixels
-      if (buffidx >= 3*BUFFPIXEL) {
-        bmpFile.read(sdbuffer, 3*BUFFPIXEL);
-        buffidx = 0;
-      }
-      
-      // convert pixel from 888 to 565
-      b = sdbuffer[buffidx++];     // blue
-      g = sdbuffer[buffidx++];     // green
-      p = sdbuffer[buffidx++];     // red
-      
-      p >>= 3;
-      p <<= 6;
-      
-      g >>= 2;
-      p |= g;
-      p <<= 5;
-      
-      b >>= 3;
-      p |= b;
-     
-       // write out the 16 bits of color
-      tft.writeData(p);
+  File     bmpFile;
+  int      bmpWidth, bmpHeight;   // W+H in pixels
+  uint8_t  bmpDepth;              // Bit depth (currently must be 24)
+  uint32_t bmpImageoffset;        // Start of image data in file
+  uint32_t rowSize;               // Not always = bmpWidth; may have padding
+  uint8_t  sdbuffer[3*BUFFPIXEL]; // pixel buffer (R+G+B per pixel)
+  uint8_t  buffidx = sizeof(sdbuffer); // Current position in sdbuffer
+  boolean  goodBmp = false;       // Set to true on valid header parse
+  boolean  flip    = true;        // BMP is stored bottom-to-top
+  int      w, h, row, col;
+  uint8_t  r, g, b;
+  uint32_t pos = 0, startTime = millis();
+
+  if((x >= tft.width()) || (y >= tft.height())) return;
+
+  Serial.println();
+  Serial.print("Loading image '");
+  Serial.print(filename);
+  Serial.println('\'');
+
+  // Open requested file on SD card
+  if ((bmpFile = SD.open(filename)) == NULL) {
+    Serial.print("File not found");
+    return;
+  }
+
+  // Parse BMP header
+  if(read16(bmpFile) == 0x4D42) { // BMP signature
+    Serial.print("File size: "); Serial.println(read32(bmpFile));
+    (void)read32(bmpFile); // Read & ignore creator bytes
+    bmpImageoffset = read32(bmpFile); // Start of image data
+    Serial.print("Image Offset: "); Serial.println(bmpImageoffset, DEC);
+    // Read DIB header
+    Serial.print("Header size: "); Serial.println(read32(bmpFile));
+    bmpWidth  = read32(bmpFile);
+    bmpHeight = read32(bmpFile);
+    if(read16(bmpFile) == 1) { // # planes -- must be '1'
+      bmpDepth = read16(bmpFile); // bits per pixel
+      Serial.print("Bit Depth: "); Serial.println(bmpDepth);
+      if((bmpDepth == 24) && (read32(bmpFile) == 0)) { // 0 = uncompressed
+
+        goodBmp = true; // Supported BMP format -- proceed!
+        Serial.print("Image size: ");
+        Serial.print(bmpWidth);
+        Serial.print('x');
+        Serial.println(bmpHeight);
+
+        // BMP rows are padded (if needed) to 4-byte boundary
+        rowSize = (bmpWidth * 3 + 3) & ~3;
+
+        // If bmpHeight is negative, image is in top-down order.
+        // This is not canon but has been observed in the wild.
+        if(bmpHeight < 0) {
+          bmpHeight = -bmpHeight;
+          flip      = false;
+        }
+
+        // Crop area to be loaded
+        w = bmpWidth;
+        h = bmpHeight;
+        if((x+w-1) >= tft.width())  w = tft.width()  - x;
+        if((y+h-1) >= tft.height()) h = tft.height() - y;
+
+        // Set TFT address window to clipped image bounds
+        tft.setAddrWindow(x, y, x+w-1, y+h-1);
+
+        for (row=0; row<h; row++) { // For each scanline...
+
+          // Seek to start of scan line.  It might seem labor-
+          // intensive to be doing this on every line, but this
+          // method covers a lot of gritty details like cropping
+          // and scanline padding.  Also, the seek only takes
+          // place if the file position actually needs to change
+          // (avoids a lot of cluster math in SD library).
+          if(flip) // Bitmap is stored bottom-to-top order (normal BMP)
+            pos = bmpImageoffset + (bmpHeight - 1 - row) * rowSize;
+          else     // Bitmap is stored top-to-bottom
+            pos = bmpImageoffset + row * rowSize;
+          if(bmpFile.position() != pos) { // Need seek?
+            bmpFile.seek(pos);
+            buffidx = sizeof(sdbuffer); // Force buffer reload
+          }
+
+          for (col=0; col<w; col++) { // For each pixel...
+            // Time to read more pixel data?
+            if (buffidx >= sizeof(sdbuffer)) { // Indeed
+              bmpFile.read(sdbuffer, sizeof(sdbuffer));
+              buffidx = 0; // Set index to beginning
+            }
+
+            // Convert pixel from BMP to TFT format, push to display
+            b = sdbuffer[buffidx++];
+            g = sdbuffer[buffidx++];
+            r = sdbuffer[buffidx++];
+            tft.writeData(tft.Color565(r,g,b));
+          } // end pixel
+        } // end scanline
+        Serial.print("Loaded in ");
+        Serial.print(millis() - startTime);
+        Serial.println(" ms");
+      } // end goodBmp
     }
   }
-  Serial.print(millis() - time, DEC);
-  Serial.println(" ms");
+
+  bmpFile.close();
+  if(!goodBmp) Serial.println("BMP format not recognized.");
 }
 
-boolean bmpReadHeader(File f) {
-   // read header
-  uint32_t tmp;
-  
-  if (read16(f) != 0x4D42) {
-    // magic bytes missing
-    return false;
-  }
- 
-  // read file size
-  tmp = read32(f);  
-  Serial.print("size 0x"); Serial.println(tmp, HEX);
-  
-  // read and ignore creator bytes
-  read32(f);
-  
-  bmpImageoffset = read32(f);  
-  Serial.print("offset "); Serial.println(bmpImageoffset, DEC);
-  
-  // read DIB header
-  tmp = read32(f);
-  Serial.print("header size "); Serial.println(tmp, DEC);
-  bmpWidth = read32(f);
-  bmpHeight = read32(f);
+// These read 16- and 32-bit types from the SD card file.
+// BMP data is stored little-endian, Arduino is little-endian too.
+// May need to reverse subscript order if porting elsewhere.
 
-  
-  if (read16(f) != 1)
-    return false;
-    
-  bmpDepth = read16(f);
-  Serial.print("bitdepth "); Serial.println(bmpDepth, DEC);
-
-  if (read32(f) != 0) {
-    // compression not supported!
-    return false;
-  }
-  
-  Serial.print("compression "); Serial.println(tmp, DEC);
-
-  return true;
-}
-
-/*********************************************/
-
-// These read data from the SD card file and convert them to big endian 
-// (the data is stored in little endian format!)
-
-// LITTLE ENDIAN!
 uint16_t read16(File f) {
-  uint16_t d;
-  uint8_t b;
-  b = f.read();
-  d = f.read();
-  d <<= 8;
-  d |= b;
-  return d;
+  uint16_t result;
+  ((uint8_t *)&result)[0] = f.read(); // LSB
+  ((uint8_t *)&result)[1] = f.read(); // MSB
+  return result;
 }
 
-
-// LITTLE ENDIAN!
 uint32_t read32(File f) {
-  uint32_t d;
-  uint16_t b;
- 
-  b = read16(f);
-  d = read16(f);
-  d <<= 16;
-  d |= b;
-  return d;
+  uint32_t result;
+  ((uint8_t *)&result)[0] = f.read(); // LSB
+  ((uint8_t *)&result)[1] = f.read();
+  ((uint8_t *)&result)[2] = f.read();
+  ((uint8_t *)&result)[3] = f.read(); // MSB
+  return result;
 }
 

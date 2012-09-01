@@ -102,8 +102,7 @@ class Adafruit_TFTLCD : public Adafruit_GFX {
 
   // commands
   void begin(uint16_t id = 0x9325);
-  void goTo(int x, int y);
-  void setWindow(int x1, int y1, int x2, int y2);
+  void setAddrWindow(int x1, int y1, int x2, int y2);
   void reset(void);
 
   /* low level */

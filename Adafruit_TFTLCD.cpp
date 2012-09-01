@@ -66,41 +66,26 @@ static volatile uint8_t *wrportreg;
 #include "pins_arduino.h"
 #include "wiring_private.h"
 
-
-void Adafruit_TFTLCD::goTo(int x, int y) {
-  if (driver == 0x9325 || driver == 0x9328) {
-    writeRegister16(0x0020, x);     // GRAM Address Set (Horizontal Address) (R20h)
-    writeRegister16(0x0021, y);     // GRAM Address Set (Vertical Address) (R21h)
-    writeCommand(0x0022);            // Write Data to GRAM (R22h)
-  } 
-  if (driver == 0x7575) {
-    writeRegister8(HX8347G_COLADDRSTART2, x>>8);
-    writeRegister8(HX8347G_COLADDRSTART1, x);
-    writeRegister8(HX8347G_ROWADDRSTART2, y>>8);
-    writeRegister8(HX8347G_ROWADDRSTART1, y);
-
-    writeRegister8(HX8347G_COLADDREND2, 0);
-    writeRegister8(HX8347G_COLADDREND1, TFTWIDTH-1);
-    writeRegister8(HX8347G_ROWADDREND2, (TFTHEIGHT-1)>>8);
-    writeRegister8(HX8347G_ROWADDREND1, (TFTHEIGHT-1)&0xFF);
-    writeCommand(0x0022);            // Write Data to GRAM (R22h)
-  }
-}
-void Adafruit_TFTLCD::setWindow(int x1, int y1, int x2, int y2) {
+void Adafruit_TFTLCD::setAddrWindow(int x1, int y1, int x2, int y2) {
  
-  if (driver == 0x7575) {
+  if (driver == 0x9325 || driver == 0x9328) {
+    writeRegister16(0x0050, x1); // Set address window
+    writeRegister16(0x0051, x2);
+    writeRegister16(0x0052, y1);
+    writeRegister16(0x0053, y2);
+    writeRegister16(0x0020, x1); // Set address counter to top-left
+    writeRegister16(0x0021, y1);
+  } else if(driver == 0x7575) {
     writeRegister8(HX8347G_COLADDRSTART2, x1>>8);
     writeRegister8(HX8347G_COLADDRSTART1, x1);
     writeRegister8(HX8347G_ROWADDRSTART2, y1>>8);
     writeRegister8(HX8347G_ROWADDRSTART1, y1);
-
-    writeRegister8(HX8347G_COLADDREND2, x2>>8);
-    writeRegister8(HX8347G_COLADDREND1, x2);
-    writeRegister8(HX8347G_ROWADDREND2, y2>>8);
-    writeRegister8(HX8347G_ROWADDREND1, y2);
-
-    writeCommand(0x0022);            // Write Data to GRAM (R22h)
+    writeRegister8(HX8347G_COLADDREND2  , x2>>8);
+    writeRegister8(HX8347G_COLADDREND1  , x2);
+    writeRegister8(HX8347G_ROWADDREND2  , y2>>8);
+    writeRegister8(HX8347G_ROWADDREND1  , y2);
   }
+  writeCommand(0x0022); // Write Data to GRAM
 }
 
 
@@ -227,8 +212,6 @@ void Adafruit_TFTLCD::drawFastLine(int16_t x, int16_t y, int16_t length,
     writeRegister8(HX8347G_ROWADDREND2, endy>>8);
     writeRegister8(HX8347G_ROWADDREND1, endy);
     writeCommand(0x0022);            // Write Data to GRAM (R22h)
-
-
   }
 
   *portOutputRegister(csport) &= ~cspin;  //digitalWrite(_cs, LOW);
@@ -245,7 +228,7 @@ void Adafruit_TFTLCD::drawFastLine(int16_t x, int16_t y, int16_t length,
   *portOutputRegister(csport) |= cspin;    //digitalWrite(_cs, HIGH);
 
   if (driver == 0x7575) {
-    goTo(0,0);
+    setAddrWindow(0, 0, TFTWIDTH, TFTHEIGHT);
   } else {
     writeRegister16(ILI932X_ENTRY_MOD, 0x1030);
   }
@@ -254,24 +237,21 @@ void Adafruit_TFTLCD::drawFastLine(int16_t x, int16_t y, int16_t length,
 
 
 void Adafruit_TFTLCD::fillScreen(uint16_t color) {
-  goTo(0,0);
+  uint32_t i = (uint32_t)TFTWIDTH * (uint32_t)TFTHEIGHT;
+  
+  setAddrWindow(0, 0, TFTWIDTH, TFTHEIGHT);
 
-  uint32_t i;
-  
-  i = 320;
-  i *= 240;
-  
   *portOutputRegister(csport) &= ~cspin;    //digitalWrite(_cs, LOW);
-  *portOutputRegister(cdport) |= cdpin;     //digitalWrite(_cd, HIGH);
-  *portOutputRegister(rdport) |= rdpin;     //digitalWrite(_rd, HIGH);
-  *portOutputRegister(wrport) |= wrpin;     //digitalWrite(_wr, HIGH);
+  *portOutputRegister(cdport) |=  cdpin;    //digitalWrite(_cd, HIGH);
+  *portOutputRegister(rdport) |=  rdpin;    //digitalWrite(_rd, HIGH);
+  *portOutputRegister(wrport) |=  wrpin;    //digitalWrite(_wr, HIGH);
 
   setWriteDir();
   while (i--) {
     writeData_unsafe(color); 
   }
 
-  *portOutputRegister(csport) |= cspin;    //digitalWrite(_cs, HIGH);
+  *portOutputRegister(csport) |=  cspin;    //digitalWrite(_cs, HIGH);
 }
 
 void Adafruit_TFTLCD::drawPixel(int16_t x, int16_t y, uint16_t color)
