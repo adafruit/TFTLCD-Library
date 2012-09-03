@@ -151,13 +151,13 @@ void bmpdraw(File f, int x, int y) {
     } else if (identifier == 0x7575) {
       if (tft.getRotation() == 3) {
         tft.writeRegister8(HX8347G_MEMACCESS, 0x20);
-        tft.setWindow(x, y+i, 319, y+i); 
+        tft.setAddrWindow(x, y+i, 319, y+i); 
       } else if  (tft.getRotation() == 2) {
         tft.writeRegister8(HX8347G_MEMACCESS, 0x40);
         tft.goTo(x, y+i); 
       } else if  (tft.getRotation() == 1) {
         tft.writeRegister8(HX8347G_MEMACCESS, 0xA0);
-        tft.setWindow(x, y+bmpHeight-1-i, 319, y+bmpHeight-i); 
+        tft.setAddrWindow(x, y+bmpHeight-1-i, 319, y+bmpHeight-i); 
       } else if  (tft.getRotation() == 0) {
         tft.writeRegister8(HX8347G_MEMACCESS, 0x0);
         tft.goTo(x, y+bmpHeight-i-1); 

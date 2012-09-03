@@ -66,6 +66,27 @@ static volatile uint8_t *wrportreg;
 #include "pins_arduino.h"
 #include "wiring_private.h"
 
+// Deprecated function -- here for compat w/old code
+void Adafruit_TFTLCD::goTo(int x, int y) {
+  if (driver == 0x9325 || driver == 0x9328) {
+    writeRegister16(0x0020, x);     // GRAM Address Set (Horizontal Address) (R20h)
+    writeRegister16(0x0021, y);     // GRAM Address Set (Vertical Address) (R21h)
+    writeCommand(0x0022);            // Write Data to GRAM (R22h)
+  } 
+  if (driver == 0x7575) {
+    writeRegister8(HX8347G_COLADDRSTART2, x>>8);
+    writeRegister8(HX8347G_COLADDRSTART1, x);
+    writeRegister8(HX8347G_ROWADDRSTART2, y>>8);
+    writeRegister8(HX8347G_ROWADDRSTART1, y);
+
+    writeRegister8(HX8347G_COLADDREND2, 0);
+    writeRegister8(HX8347G_COLADDREND1, TFTWIDTH-1);
+    writeRegister8(HX8347G_ROWADDREND2, (TFTHEIGHT-1)>>8);
+    writeRegister8(HX8347G_ROWADDREND1, (TFTHEIGHT-1)&0xFF);
+    writeCommand(0x0022);            // Write Data to GRAM (R22h)
+  }
+}
+
 void Adafruit_TFTLCD::setAddrWindow(int x1, int y1, int x2, int y2) {
  
   if (driver == 0x9325 || driver == 0x9328) {
