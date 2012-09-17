@@ -1,28 +1,19 @@
-// Paint example specifically for the TFTLCD breakout board.
-// If using the Arduino shield, use the tftpaint_shield.pde sketch instead!
-// DOES NOT CURRENTLY WORK ON ARDUINO LEONARDO
+// Paint example specifically for the TFTLCD Arduino shield.
+// If using the breakout board, use the tftpaint.pde sketch instead!
 
 #include <Adafruit_GFX.h>    // Core graphics library
 #include <Adafruit_TFTLCD.h> // Hardware-specific library
 #include <TouchScreen.h>
 
-// When using the BREAKOUT BOARD only, use these 8 data lines to the LCD:
-// For the Arduino Uno, Duemilanove, Diecimila, etc.:
-//   D0 connects to digital pin 8  (Notice these are
-//   D1 connects to digital pin 9   NOT in order!)
-//   D2 connects to digital pin 2
-//   D3 connects to digital pin 3
-//   D4 connects to digital pin 4
-//   D5 connects to digital pin 5
-//   D6 connects to digital pin 6
-//   D7 connects to digital pin 7
-// For the Arduino Mega, use digital pins 22 through 29
-// (on the 2-row header at the end of the board).
+#ifndef USE_ADAFRUIT_SHIELD_PINOUT 
+ #error "This sketch is intended for use with the TFT LCD Shield. Make sure that USE_ADAFRUIT_SHIELD_PINOUT is #defined in the Adafruit_TFTLCD.h library file."
+#endif
 
-#define YP A3  // must be an analog pin, use "An" notation!
+// These are the pins for the shield!
+#define YP A1  // must be an analog pin, use "An" notation!
 #define XM A2  // must be an analog pin, use "An" notation!
-#define YM 9   // can be a digital pin
-#define XP 8   // can be a digital pin
+#define YM 7   // can be a digital pin
+#define XP 6   // can be a digital pin
 
 #define TS_MINX 150
 #define TS_MINY 120
@@ -38,8 +29,6 @@ TouchScreen ts = TouchScreen(XP, YP, XM, YM, 300);
 #define LCD_CD A2
 #define LCD_WR A1
 #define LCD_RD A0
-// optional
-#define LCD_RESET A4
 
 // Assign human-readable names to some common 16-bit color values:
 #define	BLACK   0x0000
@@ -52,18 +41,18 @@ TouchScreen ts = TouchScreen(XP, YP, XM, YM, 300);
 #define WHITE   0xFFFF
 
 
-Adafruit_TFTLCD tft(LCD_CS, LCD_CD, LCD_WR, LCD_RD, LCD_RESET);
+Adafruit_TFTLCD tft;
 
-#define BOXSIZE 40
-#define PENRADIUS 3
+#define BOXSIZE   40
+#define PENRADIUS  4
 int oldcolor, currentcolor;
 
 void setup(void) {
   Serial.begin(9600);
   Serial.println("Paint!");
-  
+
   tft.reset();
-  
+
   uint16_t identifier = tft.readID();
 
   if(identifier == 0x9325) {

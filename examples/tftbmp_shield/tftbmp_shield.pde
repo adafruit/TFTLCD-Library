@@ -1,271 +1,225 @@
+// BMP-loading example specifically for the TFTLCD Arduino shield.
+// If using the breakout board, use the tftbmp.pde sketch instead!
+// If using an Arduino Mega, make sure the SD library is configured for
+// 'soft' SPI in the file Sd2Card.h.
+
 #include <Adafruit_GFX.h>    // Core graphics library
 #include <Adafruit_TFTLCD.h> // Hardware-specific library
 #include <SD.h>
-#include <SPI.h>
 
-#if not defined USE_ADAFRUIT_SHIELD_PINOUT 
- #error "For use with the shield, make sure to #define USE_ADAFRUIT_SHIELD_PINOUT in the TFTLCD.h library file"
-#endif
-
-// These are the pins as connected in the shield
-#define LCD_CS A3    // Chip Select goes to Analog 3
-#define LCD_CD A2    // Command/Data goes to Analog 2
-#define LCD_WR A1    // LCD Write goes to Analog 1
-#define LCD_RD A0    // LCD Read goes to Analog 0
-
-// The chip select pin for the SD card on the shield
-#define SD_CS 5 
 // In the SD card, place 24 bit color BMP files (be sure they are 24-bit!)
 // There are examples in the sketch folder
 
-// our TFT wiring
-Adafruit_TFTLCD tft(LCD_CS, LCD_CD, LCD_WR, LCD_RD, 0);
+#define SD_CS 5 // Card select for shield use
 
-// the file itself
-File bmpFile;
+Adafruit_TFTLCD tft;
+uint8_t         spi_save;
 
-// information we extract about the bitmap file
-int bmpWidth, bmpHeight;
-uint8_t bmpDepth, bmpImageoffset;
-
-/************* HARDWARE SPI ENABLE/DISABLE */
-// we want to reuse the pins for the SD card and the TFT - to save 2 pins. this means we have to
-// enable the SPI hardware interface whenever accessing the SD card and then disable it when done
-int8_t saved_spimode;
-
-void disableSPI(void) {
-  saved_spimode = SPCR;
-  SPCR = 0;
-}
-
-void enableSPI(void) {
-  SPCR = saved_spimode; 
-}
-/******************************************/
-
-uint16_t identifier;
 void setup()
 {
-
   Serial.begin(9600);
-  
+ 
   tft.reset();
-  
-  // find the TFT display
-  identifier = tft.readRegister(0x0);
-  if (identifier == 0x9325) {
-    Serial.println("Found ILI9325");
-  } else if (identifier == 0x9328) {
-    Serial.println("Found ILI9328");
-  } else if (identifier == 0x7575) {
-    Serial.println("Found HX8347G");
+
+  uint16_t identifier = tft.readID();
+
+  if(identifier == 0x9325) {
+    Serial.println(PSTR("Found ILI9325 LCD driver"));
+  } else if(identifier == 0x9328) {
+    Serial.println(PSTR("Found ILI9328 LCD driver"));
+  } else if(identifier == 0x7575) {
+    Serial.println(PSTR("Found HX8347G LCD driver"));
   } else {
-    Serial.print("Unknown driver chip ");
+    Serial.print(PSTR("Unknown LCD driver chip: "));
     Serial.println(identifier, HEX);
-    while (1);
-  }  
+    Serial.println(PSTR("If using the Adafruit 2.8\" TFT Arduino shield, the line:"));
+    Serial.println(PSTR("  #define USE_ADAFRUIT_SHIELD_PINOUT"));
+    Serial.println(PSTR("should appear in the library header (Adafruit_TFT.h)."));
+    Serial.println(PSTR("If using the breakout board, it should NOT be #defined!"));
+    Serial.println(PSTR("Also if using the breakout, double-check that all wiring"));
+    Serial.println(PSTR("matches the tutorial."));
+    return;
+  }
  
   tft.begin(identifier);
-  // the image is a landscape, so get into landscape mode
-  tft.setRotation(1);
-  
+
   Serial.print("Initializing SD card...");
- 
   if (!SD.begin(SD_CS)) {
     Serial.println("failed!");
     return;
   }
-  Serial.println("SD OK!");
-  
-  bmpFile = SD.open("tiger.bmp");
+  Serial.println("OK!");
+  spi_save = SPCR;
 
-  if (! bmpFile) {
-    Serial.println("didnt find image");
-    while (1);
-  }
-  
-  if (! bmpReadHeader(bmpFile)) { 
-     Serial.println("bad bmp");
-     return;
-  }
-  
-  Serial.print("image size "); 
-  Serial.print(bmpWidth, DEC);
-  Serial.print(", ");
-  Serial.println(bmpHeight, DEC);
-  disableSPI();    // release SPI so we can use those pins to draw
- 
-  bmpdraw(bmpFile, 0, 0);
-  // disable the SD card interface after we are done!
-  disableSPI();
+  bmpDraw("woof.bmp", 0, 0);
+  delay(1000);
 }
-
 
 void loop()
 {
-
+  for(int i = 0; i<4; i++) {
+    tft.setRotation(i);
+    tft.fillScreen(0);
+    for(int j=0; j <= 200; j += 50) {
+      bmpDraw("miniwoof.bmp", j, j);
+    }
+    delay(1000);
+  }
 }
 
-/*********************************************/
-// This procedure reads a bitmap and draws it to the screen
-// its sped up by reading many pixels worth of data at a time
-// instead of just one pixel at a time. increading the buffer takes
-// more RAM but makes the drawing a little faster. 20 pixels' worth
-// is probably a good place
+// This function opens a Windows Bitmap (BMP) file and
+// displays it at the given coordinates.  It's sped up
+// by reading many pixels worth of data at a time
+// (rather than pixel by pixel).  Increasing the buffer
+// size takes more of the Arduino's precious RAM but
+// makes loading a little faster.  20 pixels seems a
+// good balance.
 
 #define BUFFPIXEL 20
 
-void bmpdraw(File f, int x, int y) {
+void bmpDraw(char *filename, int x, int y) {
+  File     bmpFile;
+  int      bmpWidth, bmpHeight;   // W+H in pixels
+  uint8_t  bmpDepth;              // Bit depth (currently must be 24)
+  uint32_t bmpImageoffset;        // Start of image data in file
+  uint32_t rowSize;               // Not always = bmpWidth; may have padding
+  uint8_t  sdbuffer[3*BUFFPIXEL]; // pixel in buffer (R+G+B per pixel)
+  uint16_t lcdbuffer[BUFFPIXEL];  // pixel out buffer (16-bit per pixel)
+  uint8_t  buffidx = sizeof(sdbuffer); // Current position in sdbuffer
+  boolean  goodBmp = false;       // Set to true on valid header parse
+  boolean  flip    = true;        // BMP is stored bottom-to-top
+  int      w, h, row, col;
+  uint8_t  r, g, b;
+  uint32_t pos = 0, startTime = millis();
+  uint8_t  lcdidx = 0;
+  boolean  first = true;
 
-  enableSPI();     // enable the hardware SPI to talk to the SD card
-  bmpFile.seek(bmpImageoffset);
-  disableSPI();    // release it so we can use those pins
-  
-  uint32_t time = millis();
-  uint16_t p;
-  uint8_t g, b;
-  int i, j;
-  
-  uint8_t sdbuffer[3 * BUFFPIXEL];  // 3 * pixels to buffer
-  uint8_t buffidx = 3*BUFFPIXEL;
-  
-  Serial.print("rotation = "); Serial.println(tft.getRotation(), DEC);
-  
-  for (i=0; i< bmpHeight; i++) {
-    // bitmaps are stored with the BOTTOM line first so we have to move 'up'
+  if((x >= tft.width()) || (y >= tft.height())) return;
 
-    if ((identifier == 0x9325) || (identifier == 0x9328)) {
-      if (tft.getRotation() == 3) {
-        tft.writeRegister16(ILI932X_ENTRY_MOD, 0x1028);
-        tft.goTo(x+i, y); 
-      } else if  (tft.getRotation() == 2) {
-        tft.writeRegister16(ILI932X_ENTRY_MOD, 0x1020);
-        tft.goTo(x+bmpWidth, y+i); 
-      } else if  (tft.getRotation() == 1) {
-        tft.writeRegister16(ILI932X_ENTRY_MOD, 0x1018);
-        tft.goTo(x+bmpHeight-1-i, y); 
-      } else if  (tft.getRotation() == 0) {
-        tft.writeRegister16(ILI932X_ENTRY_MOD, 0x1030);
-        tft.goTo(x, y+bmpHeight-i); 
-      }
-    } else if (identifier == 0x7575) {
-      if (tft.getRotation() == 3) {
-        tft.writeRegister8(HX8347G_MEMACCESS, 0x20);
-        tft.setAddrWindow(x, y+i, 319, y+i); 
-      } else if  (tft.getRotation() == 2) {
-        tft.writeRegister8(HX8347G_MEMACCESS, 0x40);
-        tft.goTo(x, y+i); 
-      } else if  (tft.getRotation() == 1) {
-        tft.writeRegister8(HX8347G_MEMACCESS, 0xA0);
-        tft.setAddrWindow(x, y+bmpHeight-1-i, 319, y+bmpHeight-i); 
-      } else if  (tft.getRotation() == 0) {
-        tft.writeRegister8(HX8347G_MEMACCESS, 0x0);
-        tft.goTo(x, y+bmpHeight-i-1); 
-      }
-    }
+  Serial.println();
+  Serial.print("Loading image '");
+  Serial.print(filename);
+  Serial.println('\'');
+  // Open requested file on SD card
+  SPCR = spi_save;
+  if ((bmpFile = SD.open(filename)) == NULL) {
+    Serial.print("File not found");
+    return;
+  }
 
-    
-    for (j=0; j<bmpWidth; j++) {
-      // read more pixels
-      if (buffidx >= 3*BUFFPIXEL) {
-        enableSPI();     // enable the hardware SPI to talk to the SD card
-        bmpFile.read(sdbuffer, 3*BUFFPIXEL);
-        disableSPI();    // release it so we can use those pins
-        buffidx = 0;
-      }
-      
-      // convert pixel from 888 to 565
-      b = sdbuffer[buffidx++];     // blue
-      g = sdbuffer[buffidx++];     // green
-      p = sdbuffer[buffidx++];     // red
-      
-      p >>= 3;
-      p <<= 6;
-      
-      g >>= 2;
-      p |= g;
-      p <<= 5;
-      
-      b >>= 3;
-      p |= b;
-     
-      // write out the 16 bits of color
-      tft.writeData(p);
+  // Parse BMP header
+  if(read16(bmpFile) == 0x4D42) { // BMP signature
+    Serial.print("File size: "); Serial.println(read32(bmpFile));
+    (void)read32(bmpFile); // Read & ignore creator bytes
+    bmpImageoffset = read32(bmpFile); // Start of image data
+    Serial.print("Image Offset: "); Serial.println(bmpImageoffset, DEC);
+    // Read DIB header
+    Serial.print("Header size: "); Serial.println(read32(bmpFile));
+    bmpWidth  = read32(bmpFile);
+    bmpHeight = read32(bmpFile);
+    if(read16(bmpFile) == 1) { // # planes -- must be '1'
+      bmpDepth = read16(bmpFile); // bits per pixel
+      Serial.print("Bit Depth: "); Serial.println(bmpDepth);
+      if((bmpDepth == 24) && (read32(bmpFile) == 0)) { // 0 = uncompressed
+
+        goodBmp = true; // Supported BMP format -- proceed!
+        Serial.print("Image size: ");
+        Serial.print(bmpWidth);
+        Serial.print('x');
+        Serial.println(bmpHeight);
+
+        // BMP rows are padded (if needed) to 4-byte boundary
+        rowSize = (bmpWidth * 3 + 3) & ~3;
+
+        // If bmpHeight is negative, image is in top-down order.
+        // This is not canon but has been observed in the wild.
+        if(bmpHeight < 0) {
+          bmpHeight = -bmpHeight;
+          flip      = false;
+        }
+
+        // Crop area to be loaded
+        w = bmpWidth;
+        h = bmpHeight;
+        if((x+w-1) >= tft.width())  w = tft.width()  - x;
+        if((y+h-1) >= tft.height()) h = tft.height() - y;
+
+        // Set TFT address window to clipped image bounds
+        SPCR = 0;
+        tft.setAddrWindow(x, y, x+w-1, y+h-1);
+
+        for (row=0; row<h; row++) { // For each scanline...
+          // Seek to start of scan line.  It might seem labor-
+          // intensive to be doing this on every line, but this
+          // method covers a lot of gritty details like cropping
+          // and scanline padding.  Also, the seek only takes
+          // place if the file position actually needs to change
+          // (avoids a lot of cluster math in SD library).
+          if(flip) // Bitmap is stored bottom-to-top order (normal BMP)
+            pos = bmpImageoffset + (bmpHeight - 1 - row) * rowSize;
+          else     // Bitmap is stored top-to-bottom
+            pos = bmpImageoffset + row * rowSize;
+          SPCR = spi_save;
+          if(bmpFile.position() != pos) { // Need seek?
+            bmpFile.seek(pos);
+            buffidx = sizeof(sdbuffer); // Force buffer reload
+          }
+
+          for (col=0; col<w; col++) { // For each column...
+            // Time to read more pixel data?
+            if (buffidx >= sizeof(sdbuffer)) { // Indeed
+              // Push LCD buffer to the display first
+              if(lcdidx > 0) {
+                SPCR   = 0;
+                tft.pushColors(lcdbuffer, lcdidx, first);
+                lcdidx = 0;
+                first  = false;
+              }
+              SPCR = spi_save;
+              bmpFile.read(sdbuffer, sizeof(sdbuffer));
+              buffidx = 0; // Set index to beginning
+            }
+
+            // Convert pixel from BMP to TFT format
+            b = sdbuffer[buffidx++];
+            g = sdbuffer[buffidx++];
+            r = sdbuffer[buffidx++];
+            lcdbuffer[lcdidx++] = tft.color565(r,g,b);
+          } // end pixel
+        } // end scanline
+        // Write any remaining data to LCD
+        if(lcdidx > 0) {
+          SPCR = 0;
+          tft.pushColors(lcdbuffer, lcdidx, first);
+        } 
+        Serial.print("Loaded in ");
+        Serial.print(millis() - startTime);
+        Serial.println(" ms");
+      } // end goodBmp
     }
   }
-  if (identifier == 0x7575) tft.writeRegister8(HX8347G_MEMACCESS, 0x0);
-  else  tft.writeRegister16(ILI932X_ENTRY_MOD, 0x1030);
-  Serial.print(millis() - time, DEC);
-  Serial.println(" ms");
+
+  bmpFile.close();
+  if(!goodBmp) Serial.println("BMP format not recognized.");
 }
 
-boolean bmpReadHeader(File f) {
-   // read header
-  uint32_t tmp;
-  
-  if (read16(f) != 0x4D42) {
-    // magic bytes missing
-    return false;
-  }
- 
-  // read file size
-  tmp = read32(f);  
-  Serial.print("size 0x"); Serial.println(tmp, HEX);
-  
-  // read and ignore creator bytes
-  read32(f);
-  
-  bmpImageoffset = read32(f);  
-  Serial.print("offset "); Serial.println(bmpImageoffset, DEC);
-  
-  // read DIB header
-  tmp = read32(f);
-  Serial.print("header size "); Serial.println(tmp, DEC);
-  bmpWidth = read32(f);
-  bmpHeight = read32(f);
+// These read 16- and 32-bit types from the SD card file.
+// BMP data is stored little-endian, Arduino is little-endian too.
+// May need to reverse subscript order if porting elsewhere.
 
-  
-  if (read16(f) != 1)
-    return false;
-    
-  bmpDepth = read16(f);
-  Serial.print("bitdepth "); Serial.println(bmpDepth, DEC);
-
-  if (read32(f) != 0) {
-    // compression not supported!
-    return false;
-  }
-  
-  Serial.print("compression "); Serial.println(tmp, DEC);
-
-  return true;
-}
-
-/*********************************************/
-
-// These read data from the SD card file and convert them to big endian 
-// (the data is stored in little endian format!)
-
-// LITTLE ENDIAN!
 uint16_t read16(File f) {
-  uint16_t d;
-  uint8_t b;
-  b = f.read();
-  d = f.read();
-  d <<= 8;
-  d |= b;
-  return d;
+  uint16_t result;
+  ((uint8_t *)&result)[0] = f.read(); // LSB
+  ((uint8_t *)&result)[1] = f.read(); // MSB
+  return result;
 }
 
-
-// LITTLE ENDIAN!
 uint32_t read32(File f) {
-  uint32_t d;
-  uint16_t b;
- 
-  b = read16(f);
-  d = read16(f);
-  d <<= 16;
-  d |= b;
-  return d;
+  uint32_t result;
+  ((uint8_t *)&result)[0] = f.read(); // LSB
+  ((uint8_t *)&result)[1] = f.read();
+  ((uint8_t *)&result)[2] = f.read();
+  ((uint8_t *)&result)[3] = f.read(); // MSB
+  return result;
 }
+

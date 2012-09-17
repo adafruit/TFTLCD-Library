@@ -1,27 +1,32 @@
+// BMP-loading example specifically for the TFTLCD breakout board.
+// If using the Arduino shield, use the tftbmp_shield.pde sketch instead!
+// If using an Arduino Mega, make sure the SD library is configured for
+// 'soft' SPI in the file Sd2Card.h.
+
 #include <Adafruit_GFX.h>    // Core graphics library
 #include <Adafruit_TFTLCD.h> // Hardware-specific library
 #include <SD.h>
 
-// The control pins can connect to any pins but we'll use the 
-// analog lines since that means we can double up the pins
-// with the touch screen (see the TFT paint example)
-#define LCD_CS A3    // Chip Select goes to Analog 3
-#define LCD_CD A2    // Command/Data goes to Analog 2
-#define LCD_WR A1    // LCD Write goes to Analog 1
-#define LCD_RD A0    // LCD Read goes to Analog 0
-/* For the 8 data pins:
-Duemilanove/Diecimila/UNO/etc ('168 and '328 chips) microcontoller:
-D0 connects to digital 8
-D1 connects to digital 9
-D2 connects to digital 2
-D3 connects to digital 3
-D4 connects to digital 4
-D5 connects to digital 5
-D6 connects to digital 6
-D7 connects to digital 7
+// The control pins for the LCD can be assigned to any digital or
+// analog pins...but we'll use the analog pins as this allows us to
+// double up the pins with the touch screen (see the TFT paint example).
+#define LCD_CS A3 // Chip Select goes to Analog 3
+#define LCD_CD A2 // Command/Data goes to Analog 2
+#define LCD_WR A1 // LCD Write goes to Analog 1
+#define LCD_RD A0 // LCD Read goes to Analog 0
 
-For Mega's use pins 22 thru 29 (on the double header at the end)
-*/
+// When using the BREAKOUT BOARD only, use these 8 data lines to the LCD:
+// For the Arduino Uno, Duemilanove, Diecimila, etc.:
+//   D0 connects to digital pin 8  (Notice these are
+//   D1 connects to digital pin 9   NOT in order!)
+//   D2 connects to digital pin 2
+//   D3 connects to digital pin 3
+//   D4 connects to digital pin 4
+//   D5 connects to digital pin 5
+//   D6 connects to digital pin 6
+//   D7 connects to digital pin 7
+// For the Arduino Mega, use digital pins 22 through 29
+// (on the 2-row header at the end of the board).
 
 // For Arduino Uno/Duemilanove, etc
 //  connect the SD card with DI going to pin 11, DO going to pin 12 and SCK going to pin 13 (standard)
@@ -32,30 +37,36 @@ For Mega's use pins 22 thru 29 (on the double header at the end)
 // There are examples in the sketch folder
 
 // our TFT wiring
-Adafruit_TFTLCD tft(LCD_CS, LCD_CD, LCD_WR, LCD_RD, 0);
+Adafruit_TFTLCD tft(LCD_CS, LCD_CD, LCD_WR, LCD_RD, A4);
 
 void setup()
 {
   Serial.begin(9600);
- 
+
   tft.reset();
-  
-  // find the TFT display
-  uint16_t identifier = tft.readRegister(0x0);
-  if (identifier == 0x9325) {
-    Serial.println("Found ILI9325");
-  } else if (identifier == 0x9328) {
-    Serial.println("Found ILI9328");
-  } else if (identifier == 0x7575) {
-    Serial.println("Found HX8347G");
+
+  uint16_t identifier = tft.readID();
+
+  if(identifier == 0x9325) {
+    Serial.println(PSTR("Found ILI9325 LCD driver"));
+  } else if(identifier == 0x9328) {
+    Serial.println(PSTR("Found ILI9328 LCD driver"));
+  } else if(identifier == 0x7575) {
+    Serial.println(PSTR("Found HX8347G LCD driver"));
   } else {
-    Serial.print("Unknown driver chip ");
+    Serial.print(PSTR("Unknown LCD driver chip: "));
     Serial.println(identifier, HEX);
-    while (1);
-  }  
- 
+    Serial.println(PSTR("If using the Adafruit 2.8\" TFT Arduino shield, the line:"));
+    Serial.println(PSTR("  #define USE_ADAFRUIT_SHIELD_PINOUT"));
+    Serial.println(PSTR("should appear in the library header (Adafruit_TFT.h)."));
+    Serial.println(PSTR("If using the breakout board, it should NOT be #defined!"));
+    Serial.println(PSTR("Also if using the breakout, double-check that all wiring"));
+    Serial.println(PSTR("matches the tutorial."));
+    return;
+  }
+
   tft.begin(identifier);
-  
+
   Serial.print("Initializing SD card...");
   if (!SD.begin(SD_CS)) {
     Serial.println("failed!");
@@ -69,27 +80,15 @@ void setup()
 
 void loop()
 {
-  tft.setRotation(0);
-  tft.fillScreen(0);
-  bmpDraw("miniwoof.bmp", 50, 50);
-  delay(1000);
-
-  tft.setRotation(1);
-  tft.fillScreen(0);
-  bmpDraw("miniwoof.bmp", 50, 50);
-  delay(1000);
-
-  tft.setRotation(2);
-  tft.fillScreen(0);
-  bmpDraw("miniwoof.bmp", 50, 50);
-  delay(1000);
-
-  tft.setRotation(3);
-  tft.fillScreen(0);
-  bmpDraw("miniwoof.bmp", 50, 50);
-  delay(1000);
+  for(int i = 0; i<4; i++) {
+    tft.setRotation(i);
+    tft.fillScreen(0);
+    for(int j=0; j <= 200; j += 50) {
+      bmpDraw("miniwoof.bmp", j, j);
+    }
+    delay(1000);
+  }
 }
-
 
 // This function opens a Windows Bitmap (BMP) file and
 // displays it at the given coordinates.  It's sped up
@@ -108,13 +107,16 @@ void bmpDraw(char *filename, int x, int y) {
   uint8_t  bmpDepth;              // Bit depth (currently must be 24)
   uint32_t bmpImageoffset;        // Start of image data in file
   uint32_t rowSize;               // Not always = bmpWidth; may have padding
-  uint8_t  sdbuffer[3*BUFFPIXEL]; // pixel buffer (R+G+B per pixel)
+  uint8_t  sdbuffer[3*BUFFPIXEL]; // pixel in buffer (R+G+B per pixel)
+  uint16_t lcdbuffer[BUFFPIXEL];  // pixel out buffer (16-bit per pixel)
   uint8_t  buffidx = sizeof(sdbuffer); // Current position in sdbuffer
   boolean  goodBmp = false;       // Set to true on valid header parse
   boolean  flip    = true;        // BMP is stored bottom-to-top
   int      w, h, row, col;
   uint8_t  r, g, b;
   uint32_t pos = 0, startTime = millis();
+  uint8_t  lcdidx = 0;
+  boolean  first = true;
 
   if((x >= tft.width()) || (y >= tft.height())) return;
 
@@ -122,7 +124,6 @@ void bmpDraw(char *filename, int x, int y) {
   Serial.print("Loading image '");
   Serial.print(filename);
   Serial.println('\'');
-
   // Open requested file on SD card
   if ((bmpFile = SD.open(filename)) == NULL) {
     Serial.print("File not found");
@@ -170,7 +171,6 @@ void bmpDraw(char *filename, int x, int y) {
         tft.setAddrWindow(x, y, x+w-1, y+h-1);
 
         for (row=0; row<h; row++) { // For each scanline...
-
           // Seek to start of scan line.  It might seem labor-
           // intensive to be doing this on every line, but this
           // method covers a lot of gritty details like cropping
@@ -186,20 +186,30 @@ void bmpDraw(char *filename, int x, int y) {
             buffidx = sizeof(sdbuffer); // Force buffer reload
           }
 
-          for (col=0; col<w; col++) { // For each pixel...
+          for (col=0; col<w; col++) { // For each column...
             // Time to read more pixel data?
             if (buffidx >= sizeof(sdbuffer)) { // Indeed
+              // Push LCD buffer to the display first
+              if(lcdidx > 0) {
+                tft.pushColors(lcdbuffer, lcdidx, first);
+                lcdidx = 0;
+                first  = false;
+              }
               bmpFile.read(sdbuffer, sizeof(sdbuffer));
               buffidx = 0; // Set index to beginning
             }
 
-            // Convert pixel from BMP to TFT format, push to display
+            // Convert pixel from BMP to TFT format
             b = sdbuffer[buffidx++];
             g = sdbuffer[buffidx++];
             r = sdbuffer[buffidx++];
-            tft.writeData(tft.Color565(r,g,b));
+            lcdbuffer[lcdidx++] = tft.color565(r,g,b);
           } // end pixel
         } // end scanline
+        // Write any remaining data to LCD
+        if(lcdidx > 0) {
+          tft.pushColors(lcdbuffer, lcdidx, first);
+        } 
         Serial.print("Loaded in ");
         Serial.print(millis() - startTime);
         Serial.println(" ms");
