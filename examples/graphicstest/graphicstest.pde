@@ -45,12 +45,12 @@ Adafruit_TFTLCD tft(LCD_CS, LCD_CD, LCD_WR, LCD_RD, LCD_RESET);
 
 void setup(void) {
   Serial.begin(9600);
-  Serial.println("TFT LCD test");
+  progmemPrintln(PSTR("TFT LCD test"));
 
 #ifdef USE_ADAFRUIT_SHIELD_PINOUT
-  Serial.println("Using Adafruit 2.8\" TFT Arduino Shield Pinout");
+  progmemPrintln(PSTR("Using Adafruit 2.8\" TFT Arduino Shield Pinout"));
 #else
-  Serial.println("Using Adafruit 2.8\" TFT Breakout Board Pinout");
+  progmemPrintln(PSTR("Using Adafruit 2.8\" TFT Breakout Board Pinout"));
 #endif
 
   tft.reset();
@@ -58,75 +58,75 @@ void setup(void) {
   uint16_t identifier = tft.readID();
 
   if(identifier == 0x9325) {
-    Serial.println(PSTR("Found ILI9325 LCD driver"));
+    progmemPrintln(PSTR("Found ILI9325 LCD driver"));
   } else if(identifier == 0x9328) {
-    Serial.println(PSTR("Found ILI9328 LCD driver"));
+    progmemPrintln(PSTR("Found ILI9328 LCD driver"));
   } else if(identifier == 0x7575) {
-    Serial.println(PSTR("Found HX8347G LCD driver"));
+    progmemPrintln(PSTR("Found HX8347G LCD driver"));
   } else {
-    Serial.print(PSTR("Unknown LCD driver chip: "));
+    progmemPrint(PSTR("Unknown LCD driver chip: "));
     Serial.println(identifier, HEX);
-    Serial.println(PSTR("If using the Adafruit 2.8\" TFT Arduino shield, the line:"));
-    Serial.println(PSTR("  #define USE_ADAFRUIT_SHIELD_PINOUT"));
-    Serial.println(PSTR("should appear in the library header (Adafruit_TFT.h)."));
-    Serial.println(PSTR("If using the breakout board, it should NOT be #defined!"));
-    Serial.println(PSTR("Also if using the breakout, double-check that all wiring"));
-    Serial.println(PSTR("matches the tutorial."));
+    progmemPrintln(PSTR("If using the Adafruit 2.8\" TFT Arduino shield, the line:"));
+    progmemPrintln(PSTR("  #define USE_ADAFRUIT_SHIELD_PINOUT"));
+    progmemPrintln(PSTR("should appear in the library header (Adafruit_TFT.h)."));
+    progmemPrintln(PSTR("If using the breakout board, it should NOT be #defined!"));
+    progmemPrintln(PSTR("Also if using the breakout, double-check that all wiring"));
+    progmemPrintln(PSTR("matches the tutorial."));
     return;
   }
 
   tft.begin(identifier);
 
-  Serial.println("Benchmark                Time (microseconds)");
+  progmemPrintln(PSTR("Benchmark                Time (microseconds)"));
 
-  Serial.print("Screen fill              ");
+  progmemPrint(PSTR("Screen fill              "));
   Serial.println(testFillScreen());
   delay(500);
 
-  Serial.print("Text                     ");
+  progmemPrint(PSTR("Text                     "));
   Serial.println(testText());
   delay(3000);
 
-  Serial.print("Lines                    ");
+  progmemPrint(PSTR("Lines                    "));
   Serial.println(testLines(CYAN));
   delay(500);
 
-  Serial.print("Horiz/Vert Lines         ");
+  progmemPrint(PSTR("Horiz/Vert Lines         "));
   Serial.println(testFastLines(RED, BLUE));
   delay(500);
 
-  Serial.print("Rectangles (outline)     ");
+  progmemPrint(PSTR("Rectangles (outline)     "));
   Serial.println(testRects(GREEN));
   delay(500);
 
-  Serial.print("Rectangles (filled)      ");
+  progmemPrint(PSTR("Rectangles (filled)      "));
   Serial.println(testFilledRects(YELLOW, MAGENTA));
   delay(500);
 
-  Serial.print("Circles (filled)         ");
+  progmemPrint(PSTR("Circles (filled)         "));
   Serial.println(testFilledCircles(10, MAGENTA));
 
-  Serial.print("Circles (outline)        ");
+  progmemPrint(PSTR("Circles (outline)        "));
   Serial.println(testCircles(10, WHITE));
   delay(500);
 
-  Serial.print("Triangles (outline)      ");
+  progmemPrint(PSTR("Triangles (outline)      "));
   Serial.println(testTriangles());
   delay(500);
 
-  Serial.print("Triangles (filled)       ");
+  progmemPrint(PSTR("Triangles (filled)       "));
   Serial.println(testFilledTriangles());
   delay(500);
 
-  Serial.print("Rounded rects (outline)  ");
+  progmemPrint(PSTR("Rounded rects (outline)  "));
   Serial.println(testRoundRects());
   delay(500);
 
-  Serial.print("Rounded rects (filled)   ");
+  progmemPrint(PSTR("Rounded rects (filled)   "));
   Serial.println(testFilledRoundRects());
   delay(500);
 
-  Serial.println("Done!");
+  progmemPrintln(PSTR("Done!"));
 }
 
 void loop(void) {
@@ -377,3 +377,17 @@ unsigned long testFilledRoundRects() {
 
   return micros() - start;
 }
+
+// Copy string from flash to serial port
+// Source string MUST be inside a PSTR() declaration!
+void progmemPrint(const char *str) {
+  char c;
+  while(c = pgm_read_byte(str++)) Serial.print(c);
+}
+
+// Same as above, with trailing newline
+void progmemPrintln(const char *str) {
+  progmemPrint(str);
+  Serial.println();
+}
+

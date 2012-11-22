@@ -24,31 +24,31 @@ void setup()
   uint16_t identifier = tft.readID();
 
   if(identifier == 0x9325) {
-    Serial.println(PSTR("Found ILI9325 LCD driver"));
+    progmemPrintln(PSTR("Found ILI9325 LCD driver"));
   } else if(identifier == 0x9328) {
-    Serial.println(PSTR("Found ILI9328 LCD driver"));
+    progmemPrintln(PSTR("Found ILI9328 LCD driver"));
   } else if(identifier == 0x7575) {
-    Serial.println(PSTR("Found HX8347G LCD driver"));
+    progmemPrintln(PSTR("Found HX8347G LCD driver"));
   } else {
-    Serial.print(PSTR("Unknown LCD driver chip: "));
+    progmemPrint(PSTR("Unknown LCD driver chip: "));
     Serial.println(identifier, HEX);
-    Serial.println(PSTR("If using the Adafruit 2.8\" TFT Arduino shield, the line:"));
-    Serial.println(PSTR("  #define USE_ADAFRUIT_SHIELD_PINOUT"));
-    Serial.println(PSTR("should appear in the library header (Adafruit_TFT.h)."));
-    Serial.println(PSTR("If using the breakout board, it should NOT be #defined!"));
-    Serial.println(PSTR("Also if using the breakout, double-check that all wiring"));
-    Serial.println(PSTR("matches the tutorial."));
+    progmemPrintln(PSTR("If using the Adafruit 2.8\" TFT Arduino shield, the line:"));
+    progmemPrintln(PSTR("  #define USE_ADAFRUIT_SHIELD_PINOUT"));
+    progmemPrintln(PSTR("should appear in the library header (Adafruit_TFT.h)."));
+    progmemPrintln(PSTR("If using the breakout board, it should NOT be #defined!"));
+    progmemPrintln(PSTR("Also if using the breakout, double-check that all wiring"));
+    progmemPrintln(PSTR("matches the tutorial."));
     return;
   }
  
   tft.begin(identifier);
 
-  Serial.print("Initializing SD card...");
+  progmemPrint(PSTR("Initializing SD card..."));
   if (!SD.begin(SD_CS)) {
-    Serial.println("failed!");
+    progmemPrintln(PSTR("failed!"));
     return;
   }
-  Serial.println("OK!");
+  progmemPrintln(PSTR("OK!"));
   spi_save = SPCR;
 
   bmpDraw("woof.bmp", 0, 0);
@@ -109,21 +109,21 @@ void bmpDraw(char *filename, int x, int y) {
 
   // Parse BMP header
   if(read16(bmpFile) == 0x4D42) { // BMP signature
-    Serial.print("File size: "); Serial.println(read32(bmpFile));
+    progmemPrint(PSTR("File size: ")); Serial.println(read32(bmpFile));
     (void)read32(bmpFile); // Read & ignore creator bytes
     bmpImageoffset = read32(bmpFile); // Start of image data
-    Serial.print("Image Offset: "); Serial.println(bmpImageoffset, DEC);
+    progmemPrint(PSTR("Image Offset: ")); Serial.println(bmpImageoffset, DEC);
     // Read DIB header
-    Serial.print("Header size: "); Serial.println(read32(bmpFile));
+    progmemPrint(PSTR("Header size: ")); Serial.println(read32(bmpFile));
     bmpWidth  = read32(bmpFile);
     bmpHeight = read32(bmpFile);
     if(read16(bmpFile) == 1) { // # planes -- must be '1'
       bmpDepth = read16(bmpFile); // bits per pixel
-      Serial.print("Bit Depth: "); Serial.println(bmpDepth);
+      progmemPrint(PSTR("Bit Depth: ")); Serial.println(bmpDepth);
       if((bmpDepth == 24) && (read32(bmpFile) == 0)) { // 0 = uncompressed
 
         goodBmp = true; // Supported BMP format -- proceed!
-        Serial.print("Image size: ");
+        progmemPrint(PSTR("Image size: "));
         Serial.print(bmpWidth);
         Serial.print('x');
         Serial.println(bmpHeight);
@@ -192,7 +192,7 @@ void bmpDraw(char *filename, int x, int y) {
           SPCR = 0;
           tft.pushColors(lcdbuffer, lcdidx, first);
         } 
-        Serial.print("Loaded in ");
+        progmemPrint(PSTR("Loaded in "));
         Serial.print(millis() - startTime);
         Serial.println(" ms");
       } // end goodBmp
@@ -221,5 +221,18 @@ uint32_t read32(File f) {
   ((uint8_t *)&result)[2] = f.read();
   ((uint8_t *)&result)[3] = f.read(); // MSB
   return result;
+}
+
+// Copy string from flash to serial port
+// Source string MUST be inside a PSTR() declaration!
+void progmemPrint(const char *str) {
+  char c;
+  while(c = pgm_read_byte(str++)) Serial.print(c);
+}
+
+// Same as above, with trailing newline
+void progmemPrintln(const char *str) {
+  progmemPrint(str);
+  Serial.println();
 }
 

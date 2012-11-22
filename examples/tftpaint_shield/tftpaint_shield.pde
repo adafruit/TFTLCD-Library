@@ -49,20 +49,20 @@ int oldcolor, currentcolor;
 
 void setup(void) {
   Serial.begin(9600);
-  Serial.println("Paint!");
+  progmemPrintln(PSTR("Paint!"));
 
   tft.reset();
 
   uint16_t identifier = tft.readID();
 
   if(identifier == 0x9325) {
-    Serial.println("Found ILI9325 LCD driver");
+    progmemPrintln(PSTR("Found ILI9325 LCD driver"));
   } else if(identifier == 0x9328) {
-    Serial.println("Found ILI9328 LCD driver");
+    progmemPrintln(PSTR("Found ILI9328 LCD driver"));
   } else if(identifier == 0x7575) {
-    Serial.println("Found HX8347G LCD driver");
+    progmemPrintln(PSTR("Found HX8347G LCD driver"));
   } else {
-    Serial.print("Unknown LCD driver chip: ");
+    progmemPrint(PSTR("Unknown LCD driver chip: "));
     Serial.println(identifier, HEX);
     return;
   }
@@ -160,3 +160,17 @@ void loop()
     }
   }
 }
+
+// Copy string from flash to serial port
+// Source string MUST be inside a PSTR() declaration!
+void progmemPrint(const char *str) {
+  char c;
+  while(c = pgm_read_byte(str++)) Serial.print(c);
+}
+
+// Same as above, with trailing newline
+void progmemPrintln(const char *str) {
+  progmemPrint(str);
+  Serial.println();
+}
+
