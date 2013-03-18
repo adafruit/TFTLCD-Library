@@ -737,13 +737,14 @@ uint16_t Adafruit_TFTLCD::readID(void) {
   CS_ACTIVE;
   CD_COMMAND;
   write8(0x00);
-  WR_STROBE;     // Extra strobe because high, low bytes are the same
+  write8(0x00);
   setReadDir();  // Set up LCD data port(s) for READ operations
   CD_DATA;
-  id   = read8();       // Do not merge or otherwise simplify
-  id <<= 8;             // these lines.  It's an unfortunate
-  delayMicroseconds(1); // artifact of the macro substitution
-  id  |= read8();       // shenanigans that are going on.
+  delayMicroseconds(10);
+  id   = read8();        // Do not merge or otherwise simplify
+  id <<= 8;              // these lines.  It's an unfortunate
+  delayMicroseconds(10); // artifact of the macro substitution
+  id  |= read8();        // shenanigans that are going on.
   CS_IDLE;
   setWriteDir();  // Restore LCD data port(s) to WRITE configuration
 
