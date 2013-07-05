@@ -4,7 +4,9 @@
 // Graphics library by ladyada/adafruit with init code from Rossum
 // MIT license
 
+#ifdef __AVR__
 #include <avr/pgmspace.h>
+#endif
 #include "pins_arduino.h"
 #include "wiring_private.h"
 #include "Adafruit_TFTLCD.h"
@@ -83,7 +85,8 @@
 // Constructor for breakout board (configurable LCD control lines).
 // Can still use this w/shield, but parameters are ignored.
 Adafruit_TFTLCD::Adafruit_TFTLCD(
-  uint8_t cs, uint8_t cd, uint8_t wr, uint8_t rd, uint8_t reset) {
+  uint8_t cs, uint8_t cd, uint8_t wr, uint8_t rd, uint8_t reset) :
+  Adafruit_GFX(TFTWIDTH, TFTHEIGHT) {
 
 #ifndef USE_ADAFRUIT_SHIELD_PINOUT
   // Convert pin numbers to registers and bitmasks
@@ -118,7 +121,7 @@ Adafruit_TFTLCD::Adafruit_TFTLCD(
 }
 
 // Constructor for shield (fixed LCD control lines)
-Adafruit_TFTLCD::Adafruit_TFTLCD(void) {
+Adafruit_TFTLCD::Adafruit_TFTLCD(void) : Adafruit_GFX(TFTWIDTH, TFTHEIGHT) {
   init();
 }
 
@@ -258,8 +261,6 @@ static const uint16_t ILI932x_regValues[] PROGMEM = {
 
 void Adafruit_TFTLCD::begin(uint16_t id) {
   uint8_t i = 0;
-
-  constructor(TFTWIDTH, TFTHEIGHT);
 
   reset();
 
