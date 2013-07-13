@@ -73,6 +73,7 @@
 
   // Read 8-bit value from LCD data lines
   #define read8inline() (RD_STROBE, (PIND & B11010000) | (PINB & B00101111))
+  #define read8inlinelow() (RD_STROBE, (PIND & B11110000) | (PINB & B00101111))
 
   // These set the PORT directions as required before the write and read
   // operations.  Because write operations are much more common than reads,
@@ -125,6 +126,8 @@
   #define read8inline() (RD_STROBE, \
    ((PINH & B00011000) << 3) | ((PINB & B10110000) >> 2) | \
    ((PING & B00100000) >> 1) | ((PINH & B01100000) >> 5))
+  #define read8inlinelow() read8inline
+
   #define setWriteDirInline() { \
    DDRH |=  B01111000; DDRB |=  B10110000; DDRG |=  B00100000; }
   #define setReadDirInline() { \
@@ -138,6 +141,8 @@
 
   #define write8inline(d)               { PORTA = (d); WR_STROBE; }
   #define read8inline()       (RD_STROBE, PINA)
+  #define read8inlinelow() read8inline
+
   #define setWriteDirInline()             DDRA  = 0xff
   #define setReadDirInline()              DDRA  = 0
 
@@ -182,6 +187,7 @@
    (((PINE & B01000000) << 1) | ((PIND & B10000000) >> 1) | \
     ((PINC & B10000000) >> 2) | ((PINB & B11110000) >> 4) | \
      (PIND & B00010000)))
+  #define read8inlinelow() read8inline
   #define setWriteDirInline() { \
    DDRE |=  B01000000; DDRD |=  B10010000; \
    DDRC |=  B10000000; DDRB |=  B11110000; }
@@ -204,6 +210,7 @@
    (((PINE & B01000000) | (PIND & B00000010)) << 1) | \
    (((PINC & B01000000) | (PIND & B10000000)) >> 1) | \
     ((PIND & B00000001)<<3) | ((PINB & B00110000)>>4) | (PIND & B00010000))
+  #define read8inlinelow() read8inline
   #define setWriteDirInline() { \
    DDRE |=  B01000000; DDRD |=  B10010011; \
    DDRC |=  B01000000; DDRB |=  B00110000; }

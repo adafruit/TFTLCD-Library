@@ -745,7 +745,7 @@ uint16_t Adafruit_TFTLCD::readID(void) {
   id   = read8();        // Do not merge or otherwise simplify
   id <<= 8;              // these lines.  It's an unfortunate
   delayMicroseconds(10); // artifact of the macro substitution
-  id  |= read8();        // shenanigans that are going on.
+  id  |= read8inlinelow(); // shenanigans that are going on.
   CS_IDLE;
   setWriteDir();  // Restore LCD data port(s) to WRITE configuration
 
