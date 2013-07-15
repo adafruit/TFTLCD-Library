@@ -38,10 +38,6 @@ class Adafruit_TFTLCD : public Adafruit_GFX {
            setAddrWindow(int x1, int y1, int x2, int y2),
            pushColors(uint16_t *data, uint8_t len, boolean first);
 
-#ifndef read8
-  uint8_t  read8(void); // See notes below re: macros
-#endif
-
   uint16_t color565(uint8_t r, uint8_t g, uint8_t b),
            readPixel(int16_t x, int16_t y),
            readID(void);
@@ -72,6 +68,10 @@ class Adafruit_TFTLCD : public Adafruit_GFX {
            setLR(void),
            flood(uint16_t color, uint32_t len);
   uint8_t  driver;
+#ifndef read8
+  uint8_t  read8fn(void);
+  #define  read8isFunctionalized
+#endif
 #ifndef USE_ADAFRUIT_SHIELD_PINOUT
   volatile uint8_t *csPort    , *cdPort    , *wrPort    , *rdPort;
   uint8_t           csPinSet  ,  cdPinSet  ,  wrPinSet  ,  rdPinSet  ,

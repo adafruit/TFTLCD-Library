@@ -15,7 +15,7 @@
 //    writes that all refer to x, so it needs to be a constant or fixed
 //    variable and not something like *ptr++ (which, after macro
 //    expansion, may increment the pointer repeatedly and run off into
-//    la-la land).  Macros also give us fune-grained control over which
+//    la-la land).  Macros also give us fine-grained control over which
 //    operations are inlined on which boards (balancing speed against
 //    available program space).
 
@@ -46,6 +46,19 @@
 // Leo dig. pin :   7   6   5   4   3   2   9   8
 // Leo port/pin : PE6 PD7 PC6 PD4 PD0 PD1 PB5 PB4
 
+// Pixel read operations require a minimum 400 nS delay from RD_ACTIVE
+// to polling the input pins.  At 16 MHz, one machine cycle is 62.5 nS.
+// This code burns 7 cycles (437.5 nS) doing nothing; the RJMPs are
+// equivalent to two NOPs each, final NOP burns the 7th cycle, and the
+// last line is a radioactive mutant emoticon.
+#define DELAY7        \
+  asm volatile(       \
+    "rjmp .+0" "\n\t" \
+    "rjmp .+0" "\n\t" \
+    "rjmp .+0" "\n\t" \
+    "nop"      "\n"   \
+    ::);
+
 #if defined(__AVR_ATmega168__) || defined(__AVR_ATmega328P__) || defined (__AVR_ATmega328__) || defined(__AVR_ATmega8__)
 
  // Arduino Uno, Duemilanove, etc.
@@ -66,13 +79,19 @@
   // These are macros for I/O operations...
 
   // Write 8-bit value to LCD data lines
-  #define write8inline(d) { \
-   PORTD = (PORTD & B00101111) | ((d) & B11010000); \
-   PORTB = (PORTB & B11010000) | ((d) & B00101111); \
-   WR_STROBE; } // STROBEs are defined later
+  #define write8inline(d) {                          \
+    PORTD = (PORTD & B00101111) | ((d) & B11010000); \
+    PORTB = (PORTB & B11010000) | ((d) & B00101111); \
+    WR_STROBE; } // STROBEs are defined later
 
-  // Read 8-bit value from LCD data lines
-  #define read8inline() (RD_STROBE, (PIND & B11010000) | (PINB & B00101111))
+  // Read 8-bit value from LCD data lines.  The signle argument
+  // is a destination variable; this isn't a function and doesn't
+  // return a value in the conventional sense.
+  #define read8inline(result) {                       \
+    RD_ACTIVE;                                        \
+    DELAY7;                                           \
+    result = (PIND & B11010000) | (PINB & B00101111); \
+    RD_IDLE; }
 
   // These set the PORT directions as required before the write and read
   // operations.  Because write operations are much more common than reads,
@@ -85,13 +104,17 @@
 
  #else // Uno w/Breakout board
 
-  #define write8inline(d) { \
-   PORTD = (PORTD & B00000011) | ((d) & B11111100); \
-   PORTB = (PORTB & B11111100) | ((d) & B00000011); \
-   WR_STROBE; }
-  #define read8inline() (RD_STROBE, (PIND&  B11111100)|(PINB&  B00000011))
-  #define setWriteDirInline()      { DDRD|= B11111100;  DDRB|= B00000011; }
-  #define setReadDirInline()       { DDRD&=~B11111100;  DDRB&=~B00000011; }
+  #define write8inline(d) {                          \
+    PORTD = (PORTD & B00000011) | ((d) & B11111100); \
+    PORTB = (PORTB & B11111100) | ((d) & B00000011); \
+    WR_STROBE; }
+  #define read8inline(result) {                       \
+    RD_ACTIVE;                                        \
+    DELAY7;                                           \
+    result = (PIND & B11111100) | (PINB & B00000011); \
+    RD_IDLE; }
+  #define setWriteDirInline() { DDRD |=  B11111100; DDRB |=  B00000011; }
+  #define setReadDirInline()  { DDRD &= ~B11111100; DDRB &= ~B00000011; }
 
  #endif
 
@@ -99,7 +122,8 @@
   // of these are left undefined, an equivalent function version (non-inline)
   // is declared later.  The Uno has a moderate amount of program space, so
   // only write8() is inlined -- that one provides the most performance
-  // benefit, but also generates the most bloat.
+  // benefit, but unfortunately also generates the most bloat.  This is
+  // why only certain cases are inlined for each board.
   #define write8 write8inline
 
 #elif defined(__AVR_ATmega1281__) || defined(__AVR_ATmega2561__) || defined(__AVR_ATmega2560__) || defined(__AVR_ATmega1280__) 
@@ -117,29 +141,32 @@
   #define CD_MASK B00000100
   #define CS_MASK B00001000
 
-  #define write8inline(d) { \
-   PORTH = (PORTH & B10000111)|(((d) & B11000000)>>3)|(((d) & B00000011)<<5); \
-   PORTB = (PORTB & B01001111)|(((d) & B00101100)<<2); \
-   PORTG = (PORTG & B11011111)|(((d) & B00010000)<<1); \
-   WR_STROBE; }
-  #define read8inline() (RD_STROBE, \
-   ((PINH & B00011000) << 3) | ((PINB & B10110000) >> 2) | \
-   ((PING & B00100000) >> 1) | ((PINH & B01100000) >> 5))
-  #define setWriteDirInline() { \
-   DDRH |=  B01111000; DDRB |=  B10110000; DDRG |=  B00100000; }
-  #define setReadDirInline() { \
-   DDRH &= ~B01111000; DDRB &= ~B10110000; DDRG &= ~B00100000; }
-
-  // Strobe is wonky on Mega w/shield.  Haven't worked out the underlying
-  // reason, but an interim kludge is just to use inverted levels. ???
-  #define RD_STROBE RD_IDLE, RD_ACTIVE
+  #define write8inline(d) {                                              \
+    PORTH = (PORTH&B10000111)|(((d)&B11000000)>>3)|(((d)&B00000011)<<5); \
+    PORTB = (PORTB&B01001111)|(((d)&B00101100)<<2);                      \
+    PORTG = (PORTG&B11011111)|(((d)&B00010000)<<1);                      \
+    WR_STROBE; }
+  #define read8inline(result) {                                      \
+    RD_ACTIVE;                                                       \
+    DELAY7;                                                          \
+    result = ((PINH & B00011000) << 3) | ((PINB & B10110000) >> 2) | \
+             ((PING & B00100000) >> 1) | ((PINH & B01100000) >> 5);  \
+    RD_IDLE; }
+  #define setWriteDirInline() {                                   \
+    DDRH |=  B01111000; DDRB |=  B10110000; DDRG |=  B00100000; }
+  #define setReadDirInline()  {                                   \
+    DDRH &= ~B01111000; DDRB &= ~B10110000; DDRG &= ~B00100000; }
 
  #else // Mega w/Breakout board
 
-  #define write8inline(d)               { PORTA = (d); WR_STROBE; }
-  #define read8inline()       (RD_STROBE, PINA)
-  #define setWriteDirInline()             DDRA  = 0xff
-  #define setReadDirInline()              DDRA  = 0
+  #define write8inline(d)   { PORTA = (d); WR_STROBE; }
+  #define read8inline(result) { \
+    RD_ACTIVE;                  \
+    DELAY7;                     \
+    result = PINA;              \
+    RD_IDLE; }
+  #define setWriteDirInline() DDRA  = 0xff
+  #define setReadDirInline()  DDRA  = 0
 
  #endif
 
@@ -172,44 +199,50 @@
   #define CD_MASK B00100000
   #define CS_MASK B00010000
 
-  #define write8inline(d) { \
-   PORTE = (PORTE & B10111111) | (((d) & B10000000)>>1); \
-   PORTD = (PORTD & B01101111) | (((d) & B01000000)<<1) | ((d) & B00010000); \
-   PORTC = (PORTC & B01111111) | (((d) & B00100000)<<2); \
-   PORTB = (PORTB & B00001111) | (((d) & B00001111)<<4); \
-   WR_STROBE; }
-  #define read8inline() (RD_STROBE, \
-   (((PINE & B01000000) << 1) | ((PIND & B10000000) >> 1) | \
-    ((PINC & B10000000) >> 2) | ((PINB & B11110000) >> 4) | \
-     (PIND & B00010000)))
-  #define setWriteDirInline() { \
-   DDRE |=  B01000000; DDRD |=  B10010000; \
-   DDRC |=  B10000000; DDRB |=  B11110000; }
-  #define setReadDirInline() { \
-   DDRE &= ~B01000000; DDRD &= ~B10010000; \
-   DDRC &= ~B10000000; DDRB &= ~B11110000; }
+  #define write8inline(d) {                                                   \
+    PORTE = (PORTE & B10111111) | (((d) & B10000000)>>1);                     \
+    PORTD = (PORTD & B01101111) | (((d) & B01000000)<<1) | ((d) & B00010000); \
+    PORTC = (PORTC & B01111111) | (((d) & B00100000)<<2);                     \
+    PORTB = (PORTB & B00001111) | (((d) & B00001111)<<4);                     \
+    WR_STROBE; }
+  #define read8inline(result) {                                      \
+    RD_ACTIVE;                                                       \
+    DELAY7;                                                          \
+    result = ((PINE & B01000000) << 1) | ((PIND & B10000000) >> 1) | \
+             ((PINC & B10000000) >> 2) | ((PINB & B11110000) >> 4) | \
+              (PIND & B00010000);                                    \
+    RD_IDLE; }
+  #define setWriteDirInline() {               \
+    DDRE |=  B01000000; DDRD |=  B10010000;   \
+    DDRC |=  B10000000; DDRB |=  B11110000; }
+  #define setReadDirInline() {                \
+    DDRE &= ~B01000000; DDRD &= ~B10010000;   \
+    DDRC &= ~B10000000; DDRB &= ~B11110000; }
 
  #else // Leonardo w/Breakout board
 
-  #define write8inline(d) { \
-   uint8_t dr1 = (d) >> 1, dl1 = (d) << 1; \
-   PORTE = (PORTE & B10111111) | (dr1 & B01000000); \
-   PORTD = (PORTD & B01101100) | (dl1 & B10000000) | (((d) & B00001000)>>3) | \
-                                 (dr1 & B00000010) |  ((d) & B00010000); \
-   PORTC = (PORTC & B10111111) | (dl1 & B01000000); \
-   PORTB = (PORTB & B11001111) |(((d) & B00000011)<<4); \
-   WR_STROBE; }
-
-  #define read8inline() (RD_STROBE, \
-   (((PINE & B01000000) | (PIND & B00000010)) << 1) | \
-   (((PINC & B01000000) | (PIND & B10000000)) >> 1) | \
-    ((PIND & B00000001)<<3) | ((PINB & B00110000)>>4) | (PIND & B00010000))
-  #define setWriteDirInline() { \
-   DDRE |=  B01000000; DDRD |=  B10010011; \
-   DDRC |=  B01000000; DDRB |=  B00110000; }
-  #define setReadDirInline() { \
-   DDRE &= ~B01000000; DDRD &= ~B10010011; \
-   DDRC &= ~B01000000; DDRB &= ~B00110000; }
+  #define write8inline(d) {                                                   \
+    uint8_t dr1 = (d) >> 1, dl1 = (d) << 1;                                   \
+    PORTE = (PORTE & B10111111) | (dr1 & B01000000);                          \
+    PORTD = (PORTD & B01101100) | (dl1 & B10000000) | (((d) & B00001000)>>3) |\
+                                  (dr1 & B00000010) |  ((d) & B00010000);     \
+    PORTC = (PORTC & B10111111) | (dl1 & B01000000);                          \
+    PORTB = (PORTB & B11001111) |(((d) & B00000011)<<4);                      \
+    WR_STROBE; }
+  #define read8inline(result) {                                       \
+    RD_ACTIVE;                                                        \
+    DELAY7;                                                           \
+    result = (((PINE & B01000000) | (PIND & B00000010)) << 1) |       \
+             (((PINC & B01000000) | (PIND & B10000000)) >> 1) |       \
+              ((PIND & B00000001) << 3) | ((PINB & B00110000) >> 4) | \
+               (PIND & B00010000);                                    \
+    RD_IDLE; }
+  #define setWriteDirInline() {               \
+    DDRE |=  B01000000; DDRD |=  B10010011;   \
+    DDRC |=  B01000000; DDRB |=  B00110000; }
+  #define setReadDirInline() {                \
+    DDRE &= ~B01000000; DDRD &= ~B10010011;   \
+    DDRC &= ~B01000000; DDRB &= ~B00110000; }
 
  #endif
 
@@ -255,10 +288,7 @@
 
 #endif
 
-// Data read and write strobes, ~2 instructions and always inline
-#ifndef RD_STROBE
- #define RD_STROBE  RD_ACTIVE, RD_IDLE
-#endif
+// Data write strobe, ~2 instructions and always inline
 #define WR_STROBE { WR_ACTIVE; WR_IDLE; }
 
 // These higher-level operations are usually functionalized,
