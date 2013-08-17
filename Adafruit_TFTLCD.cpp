@@ -85,16 +85,36 @@
 // Constructor for breakout board (configurable LCD control lines).
 // Can still use this w/shield, but parameters are ignored.
 Adafruit_TFTLCD::Adafruit_TFTLCD(
-  uint8_t cs, uint8_t cd, uint8_t wr, uint8_t rd, uint8_t reset) :
+  uint8_t cs, uint8_t cd, uint8_t wr, uint8_t rd, uint8_t rst) :
   Adafruit_GFX(TFTWIDTH, TFTHEIGHT) {
+#ifndef CORE_ADAX
+  setup(cs, cd, wr, rd, rst);
+#endif
+}
 
-#ifndef USE_ADAFRUIT_SHIELD_PINOUT
+// Constructor for shield (fixed LCD control lines)
+Adafruit_TFTLCD::Adafruit_TFTLCD(void) : Adafruit_GFX(TFTWIDTH, TFTHEIGHT) {
+#ifndef CORE_ADAX
+  init();
+#endif
+}
+
+void Adafruit_TFTLCD::setup(uint8_t cs, uint8_t cd, uint8_t wr, uint8_t rd, uint8_t rst)
+{
+  #ifndef USE_ADAFRUIT_SHIELD_PINOUT
   // Convert pin numbers to registers and bitmasks
-  _reset     = reset;
+  _reset     = rst;
+  #ifndef CORE_ADAX
   csPort     = portOutputRegister(digitalPinToPort(cs));
   cdPort     = portOutputRegister(digitalPinToPort(cd));
   wrPort     = portOutputRegister(digitalPinToPort(wr));
   rdPort     = portOutputRegister(digitalPinToPort(rd));
+  #else
+  csPort     = (uint8_t*)portRegister(digitalPinToPort(cs));
+  cdPort     = (uint8_t*)portRegister(digitalPinToPort(cd));
+  wrPort     = (uint8_t*)portRegister(digitalPinToPort(wr));
+  rdPort     = (uint8_t*)portRegister(digitalPinToPort(rd));
+  #endif
   csPinSet   = digitalPinToBitMask(cs);
   cdPinSet   = digitalPinToBitMask(cd);
   wrPinSet   = digitalPinToBitMask(wr);
@@ -103,25 +123,16 @@ Adafruit_TFTLCD::Adafruit_TFTLCD(
   cdPinUnset = ~cdPinSet;
   wrPinUnset = ~wrPinSet;
   rdPinUnset = ~rdPinSet;
-  *csPort   |=  csPinSet; // Set all control bits to HIGH (idle)
-  *cdPort   |=  cdPinSet; // Signals are ACTIVE LOW
-  *wrPort   |=  wrPinSet;
-  *rdPort   |=  rdPinSet;
+  RD_IDLE;
+  WR_IDLE;
+  CD_DATA;
+  CS_IDLE;
   pinMode(cs, OUTPUT);    // Enable outputs
   pinMode(cd, OUTPUT);
   pinMode(wr, OUTPUT);
   pinMode(rd, OUTPUT);
-  if(reset) {
-    digitalWrite(reset, HIGH);
-    pinMode(reset, OUTPUT);
-  }
 #endif
 
-  init();
-}
-
-// Constructor for shield (fixed LCD control lines)
-Adafruit_TFTLCD::Adafruit_TFTLCD(void) : Adafruit_GFX(TFTWIDTH, TFTHEIGHT) {
   init();
 }
 
@@ -260,6 +271,7 @@ static const uint16_t ILI932x_regValues[] PROGMEM = {
 };
 
 void Adafruit_TFTLCD::begin(uint16_t id) {
+
   uint8_t i = 0;
 
   reset();

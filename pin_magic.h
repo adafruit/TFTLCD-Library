@@ -52,7 +52,19 @@
 // equivalent to two NOPs each, final NOP burns the 7th cycle, and the
 // last line is a radioactive mutant emoticon.
 #define DELAY7        \
-  asm volatile(       \
+  asm volatile(      \
+    "rjmp .+0" "\n\t" \
+    "rjmp .+0" "\n\t" \
+    "rjmp .+0" "\n\t" \
+    "nop"      "\n"   \
+    ::);
+
+// Xmega runs at 32 MHz instead of 16, so 13 cycle delays are needed
+#define DELAY13       \
+  asm volatile(      \
+    "rjmp .+0" "\n\t" \
+    "rjmp .+0" "\n\t" \
+    "rjmp .+0" "\n\t" \
     "rjmp .+0" "\n\t" \
     "rjmp .+0" "\n\t" \
     "rjmp .+0" "\n\t" \
@@ -252,6 +264,20 @@
   // program to compile.
   #define write8 write8inline
 
+#elif defined(VARIANT_ADAX256A3BU)
+
+	#define write8inline(d)		do { PORTC_OUT = d; WR_STROBE; } while (0)
+	#define read8inline(result)	do { RD_ACTIVE; DELAY13; result = PORTC_IN; RD_IDLE; } while (0)
+	#define setWriteDirInline()	do { PORTC_DIR = 0xFF; } while (0)
+	#define setReadDirInline()	do { PORTC_DIR = 0x00; } while (0)
+
+	#define write8            write8inline
+	#define read8             read8inline
+	#define setWriteDir       setWriteDirInline
+	#define setReadDir        setReadDirInline
+	#define writeRegister8    writeRegister8inline
+	#define writeRegister16   writeRegister16inline
+	#define writeRegisterPair writeRegisterPairInline
 #else
 
  #error "Board type unsupported / not recognized"
@@ -274,6 +300,17 @@
  #define CS_ACTIVE  CS_PORT &= ~CS_MASK
  #define CS_IDLE    CS_PORT |=  CS_MASK
 
+#elif defined(CORE_ADAX)
+
+ #define RD_ACTIVE  ((PORT_t*)rdPort)->OUTCLR = rdPinSet
+ #define RD_IDLE    ((PORT_t*)rdPort)->OUTSET = rdPinSet
+ #define WR_ACTIVE  ((PORT_t*)wrPort)->OUTCLR = wrPinSet
+ #define WR_IDLE    ((PORT_t*)wrPort)->OUTSET = wrPinSet
+ #define CD_COMMAND ((PORT_t*)cdPort)->OUTCLR = cdPinSet
+ #define CD_DATA    ((PORT_t*)cdPort)->OUTSET = cdPinSet
+ #define CS_ACTIVE  ((PORT_t*)csPort)->OUTCLR = csPinSet
+ #define CS_IDLE    ((PORT_t*)csPort)->OUTSET = csPinSet
+
 #else // Breakout board
 
  // When using the TFT breakout board, control pins are configurable.
@@ -285,30 +322,29 @@
  #define CD_DATA    *cdPort |=  cdPinSet
  #define CS_ACTIVE  *csPort &=  csPinUnset
  #define CS_IDLE    *csPort |=  csPinSet
-
 #endif
 
 // Data write strobe, ~2 instructions and always inline
-#define WR_STROBE { WR_ACTIVE; WR_IDLE; }
+#define WR_STROBE do { WR_ACTIVE; WR_IDLE; } while (0)
 
 // These higher-level operations are usually functionalized,
 // except on Mega where's there's gobs and gobs of program space.
 
 // Set value of TFT register: 8-bit address, 8-bit value
-#define writeRegister8inline(a, d) { \
-  CD_COMMAND; write8(a); CD_DATA; write8(d); }
+#define writeRegister8inline(a, d) do { \
+  CD_COMMAND; write8(a); CD_DATA; write8(d); } while (0)
 
 // Set value of TFT register: 16-bit address, 16-bit value
 // See notes at top about macro expansion, hence hi & lo temp vars
-#define writeRegister16inline(a, d) { \
+#define writeRegister16inline(a, d) do { \
   uint8_t hi, lo; \
   hi = (a) >> 8; lo = (a); CD_COMMAND; write8(hi); write8(lo); \
-  hi = (d) >> 8; lo = (d); CD_DATA   ; write8(hi); write8(lo); }
+  hi = (d) >> 8; lo = (d); CD_DATA   ; write8(hi); write8(lo); } while (0)
 
 // Set value of 2 TFT registers: Two 8-bit addresses (hi & lo), 16-bit value
-#define writeRegisterPairInline(aH, aL, d) { \
+#define writeRegisterPairInline(aH, aL, d) do { \
   uint8_t hi = (d) >> 8, lo = (d); \
   CD_COMMAND; write8(aH); CD_DATA; write8(hi); \
-  CD_COMMAND; write8(aL); CD_DATA; write8(lo); }
+  CD_COMMAND; write8(aL); CD_DATA; write8(lo); } while(0)
 
 #endif // _pin_magic_

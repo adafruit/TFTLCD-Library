@@ -15,7 +15,7 @@
 
 // **** IF USING THE LCD BREAKOUT BOARD, COMMENT OUT THIS NEXT LINE. ****
 // **** IF USING THE LCD SHIELD, LEAVE THE LINE ENABLED:             ****
-#define USE_ADAFRUIT_SHIELD_PINOUT
+//#define USE_ADAFRUIT_SHIELD_PINOUT
 
 class Adafruit_TFTLCD : public Adafruit_GFX {
 
@@ -24,7 +24,8 @@ class Adafruit_TFTLCD : public Adafruit_GFX {
   Adafruit_TFTLCD(uint8_t cs, uint8_t cd, uint8_t wr, uint8_t rd, uint8_t rst);
   Adafruit_TFTLCD(void);
 
-  void     begin(uint16_t id = 0x9325),
+  void     setup(uint8_t cs, uint8_t cd, uint8_t wr, uint8_t rd, uint8_t rst),
+           begin(uint16_t id = 0x9325),
            drawPixel(int16_t x, int16_t y, uint16_t color),
            drawFastHLine(int16_t x0, int16_t y0, int16_t w, uint16_t color),
            drawFastVLine(int16_t x0, int16_t y0, int16_t h, uint16_t color),
