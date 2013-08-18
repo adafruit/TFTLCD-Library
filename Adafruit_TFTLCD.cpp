@@ -4,8 +4,14 @@
 // Graphics library by ladyada/adafruit with init code from Rossum
 // MIT license
 
+#if defined(__SAM3X8E__)
+	#include <include/pio.h>
+    #define PROGMEM
+    #define pgm_read_byte(addr) (*(const unsigned char *)(addr))
+    #define pgm_read_word(addr) (*(const unsigned short *)(addr))
+#endif
 #ifdef __AVR__
-#include <avr/pgmspace.h>
+	#include <avr/pgmspace.h>
 #endif
 #include "pins_arduino.h"
 #include "wiring_private.h"
@@ -301,6 +307,7 @@ void Adafruit_TFTLCD::begin(uint16_t id) {
 void Adafruit_TFTLCD::reset(void) {
 
   CS_IDLE;
+//  CD_DATA;
   WR_IDLE;
   RD_IDLE;
 
