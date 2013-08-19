@@ -317,11 +317,13 @@ void Adafruit_TFTLCD::reset(void) {
   RD_IDLE;
 
 #ifdef USE_ADAFRUIT_SHIELD_PINOUT
+  pinMode(5, OUTPUT);
   digitalWrite(5, LOW);
   delay(2);
   digitalWrite(5, HIGH);
 #else
   if(_reset) {
+    pinMode(_reset, OUTPUT);
     digitalWrite(_reset, LOW);
     delay(2);
     digitalWrite(_reset, HIGH);
