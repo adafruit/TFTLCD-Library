@@ -87,16 +87,12 @@
 Adafruit_TFTLCD::Adafruit_TFTLCD(
   uint8_t cs, uint8_t cd, uint8_t wr, uint8_t rd, uint8_t rst) :
   Adafruit_GFX(TFTWIDTH, TFTHEIGHT) {
-#ifndef CORE_ADAX
   setup(cs, cd, wr, rd, rst);
-#endif
 }
 
 // Constructor for shield (fixed LCD control lines)
 Adafruit_TFTLCD::Adafruit_TFTLCD(void) : Adafruit_GFX(TFTWIDTH, TFTHEIGHT) {
-#ifndef CORE_ADAX
   init();
-#endif
 }
 
 void Adafruit_TFTLCD::setup(uint8_t cs, uint8_t cd, uint8_t wr, uint8_t rd, uint8_t rst)
