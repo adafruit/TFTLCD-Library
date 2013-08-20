@@ -1,5 +1,7 @@
-// IMPORTANT: Adafruit_TFTLCD LIBRARY MUST BE SPECIFICALLY
-// CONFIGURED FOR EITHER THE TFT SHIELD OR THE BREAKOUT BOARD.
+// This is the same "graphicstest" demo, except modified
+// to work on a XMEGA A3BU Xplained board
+// DO NOT DEFINE "USE_ADAFRUIT_SHIELD_PINOUT" in Adafruit_TFTLCD.h
+// the pin mapping are different, and Serial4 is used for debug messages
 // SEE RELEVANT COMMENTS IN Adafruit_TFTLCD.h FOR SETUP.
 
 #include <Adafruit_GFX.h>    // Core graphics library
@@ -13,6 +15,8 @@
 
 // Frank: On the XMEGA256A3BU-Xplained, PORTC is connected to the LCD data bus directly
 
+Adafruit_TFTLCD tft(LCD_CS, LCD_CD, LCD_WR, LCD_RD, LCD_RESET);
+
 // Assign human-readable names to some common 16-bit color values:
 #define	BLACK   0x0000
 #define	BLUE    0x001F
@@ -23,13 +27,10 @@
 #define YELLOW  0xFFE0
 #define WHITE   0xFFFF
 
-Adafruit_TFTLCD tft;
-
 void setup(void) {
   Serial4.begin(9600);
   Serial4.println("TFT LCD test");
 
-  tft.setup(LCD_CS, LCD_CD, LCD_WR, LCD_RD, LCD_RESET);
   tft.reset();
 
   uint16_t identifier = tft.readID();
@@ -42,7 +43,7 @@ void setup(void) {
     Serial4.println(F("Found HX8347G LCD driver"));
   } else {
     Serial4.print(F("Unknown LCD driver chip: "));
-    Serial4.println(identifier, HEX);
+    Serial4.println(identifier, HEX);    
     return;
   }
 
