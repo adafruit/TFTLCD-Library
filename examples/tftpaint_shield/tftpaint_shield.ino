@@ -5,6 +5,11 @@
 #include <Adafruit_TFTLCD.h> // Hardware-specific library
 #include <TouchScreen.h>
 
+#if defined(__SAM3X8E__)
+    #undef __FlashStringHelper::F(string_literal)
+    #define F(string_literal) string_literal
+#endif
+
 #ifndef USE_ADAFRUIT_SHIELD_PINOUT 
  #error "This sketch is intended for use with the TFT LCD Shield. Make sure that USE_ADAFRUIT_SHIELD_PINOUT is #defined in the Adafruit_TFTLCD.h library file."
 #endif
@@ -15,10 +20,17 @@
 #define YM 7   // can be a digital pin
 #define XP 6   // can be a digital pin
 
-#define TS_MINX 150
-#define TS_MINY 120
-#define TS_MAXX 920
-#define TS_MAXY 940
+#ifdef __SAM3X8E__
+  #define TS_MINX 125
+  #define TS_MINY 170
+  #define TS_MAXX 880
+  #define TS_MAXY 940
+#else
+  #define TS_MINX  150
+  #define TS_MINY  120
+  #define TS_MAXX  920
+  #define TS_MAXY  940
+#endif
 
 // For better pressure precision, we need to know the resistance
 // between X+ and X- Use any multimeter to read it

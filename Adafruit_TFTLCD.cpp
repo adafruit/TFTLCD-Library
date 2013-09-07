@@ -4,8 +4,14 @@
 // Graphics library by ladyada/adafruit with init code from Rossum
 // MIT license
 
+#if defined(__SAM3X8E__)
+	#include <include/pio.h>
+    #define PROGMEM
+    #define pgm_read_byte(addr) (*(const unsigned char *)(addr))
+    #define pgm_read_word(addr) (*(const unsigned short *)(addr))
+#endif
 #ifdef __AVR__
-#include <avr/pgmspace.h>
+	#include <avr/pgmspace.h>
 #endif
 #include "pins_arduino.h"
 #include "wiring_private.h"
@@ -99,18 +105,26 @@ void Adafruit_TFTLCD::setup(uint8_t cs, uint8_t cd, uint8_t wr, uint8_t rd, uint
 {
   #ifndef USE_ADAFRUIT_SHIELD_PINOUT
   // Convert pin numbers to registers and bitmasks
-  _reset     = rst;
-  #ifndef CORE_ADAX
-  csPort     = portOutputRegister(digitalPinToPort(cs));
-  cdPort     = portOutputRegister(digitalPinToPort(cd));
-  wrPort     = portOutputRegister(digitalPinToPort(wr));
-  rdPort     = portOutputRegister(digitalPinToPort(rd));
-  #else
-  csPort     = (uint8_t*)portRegister(digitalPinToPort(cs));
-  cdPort     = (uint8_t*)portRegister(digitalPinToPort(cd));
-  wrPort     = (uint8_t*)portRegister(digitalPinToPort(wr));
-  rdPort     = (uint8_t*)portRegister(digitalPinToPort(rd));
+  _reset     = reset;
+  #ifdef __AVR__
+    csPort     = portOutputRegister(digitalPinToPort(cs));
+    cdPort     = portOutputRegister(digitalPinToPort(cd));
+    wrPort     = portOutputRegister(digitalPinToPort(wr));
+    rdPort     = portOutputRegister(digitalPinToPort(rd));
   #endif
+  #if defined(__SAM3X8E__)
+    csPort     = digitalPinToPort(cs);
+    cdPort     = digitalPinToPort(cd);
+    wrPort     = digitalPinToPort(wr);
+    rdPort     = digitalPinToPort(rd);
+  #endif
+  #if defined(CORE_ADAX) || defined(CORE_MICROTOUCHX)
+    csPort     = portOutputRegister(digitalPinToPort(cs));
+    cdPort     = portOutputRegister(digitalPinToPort(cd));
+    wrPort     = portOutputRegister(digitalPinToPort(wr));
+    rdPort     = portOutputRegister(digitalPinToPort(rd));
+  #endif
+
   csPinSet   = digitalPinToBitMask(cs);
   cdPinSet   = digitalPinToBitMask(cd);
   wrPinSet   = digitalPinToBitMask(wr);
@@ -119,14 +133,25 @@ void Adafruit_TFTLCD::setup(uint8_t cs, uint8_t cd, uint8_t wr, uint8_t rd, uint
   cdPinUnset = ~cdPinSet;
   wrPinUnset = ~wrPinSet;
   rdPinUnset = ~rdPinSet;
-  RD_IDLE;
-  WR_IDLE;
-  CD_DATA;
-  CS_IDLE;
-  pinMode(cs, OUTPUT);    // Enable outputs
-  pinMode(cd, OUTPUT);
-  pinMode(wr, OUTPUT);
-  pinMode(rd, OUTPUT);
+
+  #ifdef __AVR__
+    *csPort   |=  csPinSet; // Set all control bits to HIGH (idle)
+    *cdPort   |=  cdPinSet; // Signals are ACTIVE LOW
+    *wrPort   |=  wrPinSet;
+    *rdPort   |=  rdPinSet;
+  #endif
+  #if defined(__SAM3X8E__)
+    csPort->PIO_SODR  |=  csPinSet; // Set all control bits to HIGH (idle)
+    cdPort->PIO_SODR  |=  cdPinSet; // Signals are ACTIVE LOW
+    wrPort->PIO_SODR  |=  wrPinSet;
+    rdPort->PIO_SODR  |=  rdPinSet;
+  #endif
+  #ifdef __AVR__
+    *csPort   |=  csPinSet; // Set all control bits to HIGH (idle)
+    *cdPort   |=  cdPinSet; // Signals are ACTIVE LOW
+    *wrPort   |=  wrPinSet;
+    *rdPort   |=  rdPinSet;
+  #endif
 #endif
 
   init();
@@ -309,6 +334,7 @@ void Adafruit_TFTLCD::begin(uint16_t id) {
 void Adafruit_TFTLCD::reset(void) {
 
   CS_IDLE;
+//  CD_DATA;
   WR_IDLE;
   RD_IDLE;
 
