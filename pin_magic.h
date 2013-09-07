@@ -270,8 +270,6 @@
   #define CD_MASK 0x00800000
   #define CS_MASK 0x00400000
 
-#define RD_STROBE  RD_ACTIVE,  delayMicroseconds(1), RD_IDLE
-
   #define write8inline(d) { \
    PIO_Set(PIOD, (((d) & 0x08)<<(7-3))); \
    PIO_Clear(PIOD, (((~d) & 0x08)<<(7-3))); \
@@ -281,70 +279,68 @@
    PIO_Clear(PIOB, (((~d) & 0x20)<<(27-5))); \
    WR_STROBE; }
 
-  #define read8inline(result) { RD_STROBE; \
+  #define read8inline(result) { \    
+   RD_ACTIVE;   \
+   delayMicroseconds(1);      \
    result = (((PIOC->PIO_PDSR & (1<<23)) >> (23-7)) | ((PIOC->PIO_PDSR & (1<<24)) >> (24-6)) | \
              ((PIOB->PIO_PDSR & (1<<27)) >> (27-5)) | ((PIOC->PIO_PDSR & (1<<26)) >> (26-4)) | \
              ((PIOD->PIO_PDSR & (1<< 7)) >> ( 7-3)) | ((PIOC->PIO_PDSR & (1<<29)) >> (29-2)) | \
-             ((PIOC->PIO_PDSR & (1<<21)) >> (21-1)) | ((PIOC->PIO_PDSR & (1<<22)) >> (22-0))); }
+             ((PIOC->PIO_PDSR & (1<<21)) >> (21-1)) | ((PIOC->PIO_PDSR & (1<<22)) >> (22-0))); \
+   RD_IDLE;}
 
   #define setWriteDirInline() { \
-   PIOD->PIO_MDDR =  0x00000080; /*PIOD->PIO_SODR =  0x00000080;*/ PIOD->PIO_OER =  0x00000080; PIOD->PIO_PER =  0x00000080; \
-   PIOC->PIO_MDDR =  0x25E00000; /*PIOC->PIO_SODR =  0x25E00000;*/ PIOC->PIO_OER =  0x25E00000; PIOC->PIO_PER =  0x25E00000; \
-   PIOB->PIO_MDDR =  0x08000000; /*PIOB->PIO_SODR =  0x08000000;*/ PIOB->PIO_OER =  0x08000000; PIOB->PIO_PER =  0x08000000; }
+   PIOD->PIO_MDDR |=  0x00000080; /*PIOD->PIO_SODR =  0x00000080;*/ PIOD->PIO_OER |=  0x00000080; PIOD->PIO_PER |=  0x00000080; \
+   PIOC->PIO_MDDR |=  0x25E00000; /*PIOC->PIO_SODR =  0x25E00000;*/ PIOC->PIO_OER |=  0x25E00000; PIOC->PIO_PER |=  0x25E00000; \
+   PIOB->PIO_MDDR |=  0x08000000; /*PIOB->PIO_SODR =  0x08000000;*/ PIOB->PIO_OER |=  0x08000000; PIOB->PIO_PER |=  0x08000000; }
 
   #define setReadDirInline() { \
 	  pmc_enable_periph_clk( ID_PIOD ) ;	  pmc_enable_periph_clk( ID_PIOC ) ;	  pmc_enable_periph_clk( ID_PIOB ) ; \
-   PIOD->PIO_PUDR =  0x00000080; PIOD->PIO_IFDR =  0x00000080; PIOD->PIO_ODR =  0x00000080; PIOD->PIO_PER =  0x00000080; \
-   PIOC->PIO_PUDR =  0x25E00000; PIOC->PIO_IFDR =  0x25E00000; PIOC->PIO_ODR =  0x25E00000; PIOC->PIO_PER =  0x25E00000; \
-   PIOB->PIO_PUDR =  0x08000000; PIOB->PIO_IFDR =  0x08000000; PIOB->PIO_ODR =  0x08000000; PIOB->PIO_PER =  0x08000000; }
+   PIOD->PIO_PUDR |=  0x00000080; PIOD->PIO_IFDR |=  0x00000080; PIOD->PIO_ODR |=  0x00000080; PIOD->PIO_PER |=  0x00000080; \
+   PIOC->PIO_PUDR |=  0x25E00000; PIOC->PIO_IFDR |=  0x25E00000; PIOC->PIO_ODR |=  0x25E00000; PIOC->PIO_PER |=  0x25E00000; \
+   PIOB->PIO_PUDR |=  0x08000000; PIOB->PIO_IFDR |=  0x08000000; PIOB->PIO_ODR |=  0x08000000; PIOB->PIO_PER |=  0x08000000; }
 
- // Control signals are ACTIVE LOW (idle is HIGH)
- // Command/Data: LOW = command, HIGH = data
- // These are single-instruction operations and always inline
- #define RD_ACTIVE  RD_PORT->PIO_CODR = RD_MASK
- #define RD_IDLE    RD_PORT->PIO_SODR = RD_MASK
- #define WR_ACTIVE  WR_PORT->PIO_CODR = WR_MASK
- #define WR_IDLE    WR_PORT->PIO_SODR = WR_MASK
- #define CD_COMMAND CD_PORT->PIO_CODR = CD_MASK
- #define CD_DATA    CD_PORT->PIO_SODR = CD_MASK
- #define CS_ACTIVE  CS_PORT->PIO_CODR = CS_MASK
- #define CS_IDLE    CS_PORT->PIO_SODR = CS_MASK
-
-
- #else // Due w/Breakout board
-
- #error "Library does not currently support Breakout Board on Due"
-
-//  #define write8inline(d) { \
-//   uint8_t dr1 = (d) >> 1, dl1 = (d) << 1; \
-//   PORTE = (PORTE & B10111111) | (dr1 & B01000000); \
-//   PORTD = (PORTD & B01101100) | (dl1 & B10000000) | (((d) & B00001000)>>3) | \
-//                                 (dr1 & B00000010) |  ((d) & B00010000); \
-//   PIOC = (PIOC & B10111111) | (dl1 & B01000000); \
-//   PIOB = (PIOB & B11001111) |(((d) & B00000011)<<4); \
-//   WR_STROBE; }
-//
-//  #define read8inline() (RD_STROBE, \
-//   (((PINE & B01000000) | (PIND & B00000010)) << 1) | \
-//   (((PINC & B01000000) | (PIND & B10000000)) >> 1) | \
-//    ((PIND & B00000001)<<3) | ((PINB & B00110000)>>4) | (PIND & B00010000))
-//  #define setWriteDirInline() { \
-//   DDRE |=  B01000000; DDRD |=  B10010011; \
-//   DDRC |=  B01000000; DDRB |=  B00110000; }
-//  #define setReadDirInline() { \
-//   DDRE &= ~B01000000; DDRD &= ~B10010011; \
-//   DDRC &= ~B01000000; DDRB &= ~B00110000; }
+   // Control signals are ACTIVE LOW (idle is HIGH)
+   // Command/Data: LOW = command, HIGH = data
+   // These are single-instruction operations and always inline
+   #define RD_ACTIVE  RD_PORT->PIO_CODR |= RD_MASK
+   #define RD_IDLE    RD_PORT->PIO_SODR |= RD_MASK
+   #define WR_ACTIVE  WR_PORT->PIO_CODR |= WR_MASK
+   #define WR_IDLE    WR_PORT->PIO_SODR |= WR_MASK
+   #define CD_COMMAND CD_PORT->PIO_CODR |= CD_MASK
+   #define CD_DATA    CD_PORT->PIO_SODR |= CD_MASK
+   #define CS_ACTIVE  CS_PORT->PIO_CODR |= CS_MASK
+   #define CS_IDLE    CS_PORT->PIO_SODR |= CS_MASK
 
 
-// // When using the TFT breakout board, control pins are configurable.
-// #define RD_ACTIVE  *rdPort &=  rdPinUnset
-// #define RD_IDLE    *rdPort |=  rdPinSet
-// #define WR_ACTIVE  *wrPort &=  wrPinUnset
-// #define WR_IDLE    *wrPort |=  wrPinSet
-// #define CD_COMMAND *cdPort &=  cdPinUnset
-// #define CD_DATA    *cdPort |=  cdPinSet
-// #define CS_ACTIVE  *csPort &=  csPinUnset
-// #define CS_IDLE    *csPort |=  csPinSet
+#else // Due w/Breakout board
+
+    #define write8inline(d) { \
+		PIO_Set(PIOC, (((d) & 0xFF)<<1)); \
+		PIO_Clear(PIOC, (((~d) & 0xFF)<<1)); \
+		WR_STROBE; }
+
+    #define read8inline(result) { \
+		RD_ACTIVE;   \
+		delayMicroseconds(1);      \
+		result = ((PIOC->PIO_PDSR & 0x1FE) >> 1); \
+		RD_IDLE;}
+
+    #define setWriteDirInline() { \
+	    PIOC->PIO_MDDR |=  0x000001FE; /*PIOC->PIO_SODR |=  0x000001FE;*/ PIOC->PIO_OER |=  0x000001FE; PIOC->PIO_PER |=  0x000001FE; }
+
+    #define setReadDirInline() { \
+		pmc_enable_periph_clk( ID_PIOC ) ; \
+		PIOC->PIO_PUDR |=  0x000001FE; PIOC->PIO_IFDR |=  0x000001FE; PIOC->PIO_ODR |=  0x000001FE; PIOC->PIO_PER |=  0x000001FE; }
+
+    // When using the TFT breakout board, control pins are configurable.
+    #define RD_ACTIVE	rdPort->PIO_CODR |= rdPinSet		//PIO_Clear(rdPort, rdPinSet)
+    #define RD_IDLE		rdPort->PIO_SODR |= rdPinSet		//PIO_Set(rdPort, rdPinSet)	
+    #define WR_ACTIVE	wrPort->PIO_CODR |= wrPinSet		//PIO_Clear(wrPort, wrPinSet)
+    #define WR_IDLE		wrPort->PIO_SODR |= wrPinSet		//PIO_Set(wrPort, wrPinSet)
+    #define CD_COMMAND	cdPort->PIO_CODR |= cdPinSet		//PIO_Clear(cdPort, cdPinSet)
+    #define CD_DATA		cdPort->PIO_SODR |= cdPinSet		//PIO_Set(cdPort, cdPinSet)
+    #define CS_ACTIVE	csPort->PIO_CODR |= csPinSet		//PIO_Clear(csPort, csPinSet)
+    #define CS_IDLE		csPort->PIO_SODR |= csPinSet		//PIO_Set(csPort, csPinSet)
 
  #endif
 

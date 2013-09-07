@@ -16,7 +16,7 @@
 
 // **** IF USING THE LCD BREAKOUT BOARD, COMMENT OUT THIS NEXT LINE. ****
 // **** IF USING THE LCD SHIELD, LEAVE THE LINE ENABLED:             ****
-#define USE_ADAFRUIT_SHIELD_PINOUT
+//#define USE_ADAFRUIT_SHIELD_PINOUT
 
 class Adafruit_TFTLCD : public Adafruit_GFX {
 
@@ -76,10 +76,20 @@ class Adafruit_TFTLCD : public Adafruit_GFX {
 #endif
 
 #ifndef USE_ADAFRUIT_SHIELD_PINOUT
-  volatile uint8_t *csPort    , *cdPort    , *wrPort    , *rdPort;
-  uint8_t           csPinSet  ,  cdPinSet  ,  wrPinSet  ,  rdPinSet  ,
-                    csPinUnset,  cdPinUnset,  wrPinUnset,  rdPinUnset,
-                   _reset;
+
+  #ifdef __AVR__
+    volatile uint8_t *csPort    , *cdPort    , *wrPort    , *rdPort;
+	uint8_t           csPinSet  ,  cdPinSet  ,  wrPinSet  ,  rdPinSet  ,
+					  csPinUnset,  cdPinUnset,  wrPinUnset,  rdPinUnset,
+					  _reset;
+  #endif
+  #if defined(__SAM3X8E__)
+    Pio *csPort    , *cdPort    , *wrPort    , *rdPort;
+	uint32_t          csPinSet  ,  cdPinSet  ,  wrPinSet  ,  rdPinSet  ,
+					  csPinUnset,  cdPinUnset,  wrPinUnset,  rdPinUnset,
+					  _reset;
+  #endif
+  
 #endif
 };
 
