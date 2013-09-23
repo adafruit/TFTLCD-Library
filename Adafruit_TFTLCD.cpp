@@ -130,10 +130,17 @@ void Adafruit_TFTLCD::setup(uint8_t cs, uint8_t cd, uint8_t wr, uint8_t rd, uint
   // Convert pin numbers to registers and bitmasks
   _reset     = rst;
   #ifdef __AVR__
-    csPort     = portOutputRegister(digitalPinToPort(cs));
-    cdPort     = portOutputRegister(digitalPinToPort(cd));
-    wrPort     = portOutputRegister(digitalPinToPort(wr));
-    rdPort     = portOutputRegister(digitalPinToPort(rd));
+    #if defined(CORE_ADAX) || defined(VARIANT_MICROTOUCHX)
+      csPort     = (uint8_t*)portRegister(digitalPinToPort(cs));
+      cdPort     = (uint8_t*)portRegister(digitalPinToPort(cd));
+      wrPort     = (uint8_t*)portRegister(digitalPinToPort(wr));
+      rdPort     = (uint8_t*)portRegister(digitalPinToPort(rd));
+    #else
+      csPort     = portOutputRegister(digitalPinToPort(cs));
+      cdPort     = portOutputRegister(digitalPinToPort(cd));
+      wrPort     = portOutputRegister(digitalPinToPort(wr));
+      rdPort     = portOutputRegister(digitalPinToPort(rd));
+    #endif
   #endif
   #if defined(__SAM3X8E__)
     csPort     = digitalPinToPort(cs);
@@ -152,10 +159,14 @@ void Adafruit_TFTLCD::setup(uint8_t cs, uint8_t cd, uint8_t wr, uint8_t rd, uint
   rdPinUnset = ~rdPinSet;
 
   #ifdef __AVR__
-    *csPort   |=  csPinSet; // Set all control bits to HIGH (idle)
-    *cdPort   |=  cdPinSet; // Signals are ACTIVE LOW
-    *wrPort   |=  wrPinSet;
-    *rdPort   |=  rdPinSet;
+    pinMode(cs, OUTPUT);
+    pinMode(cd, OUTPUT);
+    pinMode(wr, OUTPUT);
+    pinMode(rd, OUTPUT);
+    digitalWrite(cs, HIGH);
+    digitalWrite(cd, HIGH);
+    digitalWrite(wr, HIGH);
+    digitalWrite(rd, HIGH);
   #endif
   #if defined(__SAM3X8E__)
     csPort->PIO_SODR  |=  csPinSet; // Set all control bits to HIGH (idle)
@@ -378,14 +389,16 @@ void Adafruit_TFTLCD::reset(void) {
 #ifdef USE_ADAFRUIT_SHIELD_PINOUT
   pinMode(5, OUTPUT);
   digitalWrite(5, LOW);
-  delay(2);
+  delay(1);
   digitalWrite(5, HIGH);
+  delay(1);
 #else
   if(_reset) {
     pinMode(_reset, OUTPUT);
     digitalWrite(_reset, LOW);
-    delay(2);
+    delay(1);
     digitalWrite(_reset, HIGH);
+    delay(1);
   }
 #endif
 
@@ -393,8 +406,9 @@ void Adafruit_TFTLCD::reset(void) {
   CS_ACTIVE;
   CD_COMMAND;
   write8(0x00);
-  for(uint8_t i=0; i<3; i++) WR_STROBE; // Three extra 0x00s
+  for(uint8_t i=0; i<7; i++) WR_STROBE; // Three extra 0x00s
   CS_IDLE;
+  delay(100);
 }
 
 // Sets the LCD address window (and address counter, on 932X).
@@ -761,7 +775,7 @@ void Adafruit_TFTLCD::setRotation(uint8_t x) {
     // For 932X, init default full-screen address window:
     setAddrWindow(0, 0, _width - 1, _height - 1); // CS_IDLE happens here
 
-  } if(driver == ID_7575) {
+  } else if(driver == ID_7575) {
 
     uint8_t t;
     switch(rotation) {
@@ -863,8 +877,8 @@ uint16_t Adafruit_TFTLCD::readPixel(int16_t x, int16_t y) {
 // Ditto with the read/write port directions, as above.
 uint16_t Adafruit_TFTLCD::readID(void) {
 
-  #if defined(CORE_MICROTOUCHX)
-  uint16_t id;
+  #if defined(VARIANT_MICROTOUCHX)
+  uint32_t id;
 
   id = readReg(0xD3);
   if (id == 0x9341) {
@@ -891,7 +905,7 @@ uint16_t Adafruit_TFTLCD::readID(void) {
 uint32_t Adafruit_TFTLCD::readReg(uint8_t r) {
   uint32_t id = 0;
 
-  #if defined(CORE_MICROTOUCHX)
+  #if defined(VARIANT_MICROTOUCHX)
   // try reading register #4
   CS_ACTIVE;
   CD_COMMAND;
