@@ -197,6 +197,7 @@
   #define setReadDir        setReadDirInline
   #define writeRegister8    writeRegister8inline
   #define writeRegister16   writeRegister16inline
+  #define writeRegister32   writeRegister32inline
   #define writeRegisterPair writeRegisterPairInline
 
 #elif defined(__AVR_ATmega32U4__)
@@ -280,6 +281,23 @@
 	#define setReadDir        setReadDirInline
 	#define writeRegister8    writeRegister8inline
 	#define writeRegister16   writeRegister16inline
+	#define writeRegister32   writeRegister32inline
+	#define writeRegisterPair writeRegisterPairInline
+
+#elif defined(VARIANT_MICROTOUCHX)
+
+	#define write8inline(d)		do { PORTA_OUT = d; WR_STROBE; } while (0)
+	#define read8inline(result)	do { RD_ACTIVE; DELAY13; result = PORTA_IN; RD_IDLE; } while (0)
+	#define setWriteDirInline()	do { PORTA_DIR = 0xFF; } while (0)
+	#define setReadDirInline()	do { PORTA_DIR = 0x00; } while (0)
+
+	#define write8            write8inline
+	#define read8             read8inline
+	#define setWriteDir       setWriteDirInline
+	#define setReadDir        setReadDirInline
+	#define writeRegister8    writeRegister8inline
+	#define writeRegister16   writeRegister16inline
+	#define writeRegister32   writeRegister32inline
 	#define writeRegisterPair writeRegisterPairInline
 
 #elif defined(__SAM3X8E__)
@@ -395,7 +413,7 @@
  #define CS_ACTIVE  CS_PORT &= ~CS_MASK
  #define CS_IDLE    CS_PORT |=  CS_MASK
 
-#elif defined(CORE_ADAX)
+#elif defined(CORE_ADAX) || defined(CORE_MICROTOUCHX)
 
  #define RD_ACTIVE  ((PORT_t*)rdPort)->OUTCLR = rdPinSet
  #define RD_IDLE    ((PORT_t*)rdPort)->OUTSET = rdPinSet
@@ -436,6 +454,16 @@
   uint8_t hi, lo; \
   hi = (a) >> 8; lo = (a); CD_COMMAND; write8(hi); write8(lo); \
   hi = (d) >> 8; lo = (d); CD_DATA   ; write8(hi); write8(lo); } while (0)
+
+// Set value of TFT register: 8-bit address, 32-bit value
+// only used for ID_9341
+// See notes at top about macro expansion, hence hi & lo temp vars
+#define writeRegister32inline(a, d) do { \
+  CS_ACTIVE; CD_COMMAND;\
+  write8(a);\
+  CD_DATA;\
+  write8(d >> 24); write8(d >> 16); write8(d >> 8); write8(d); \
+  CS_IDLE; } while (0)
 
 // Set value of 2 TFT registers: Two 8-bit addresses (hi & lo), 16-bit value
 #define writeRegisterPairInline(aH, aL, d) do { \

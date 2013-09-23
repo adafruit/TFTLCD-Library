@@ -25,6 +25,7 @@ class Adafruit_TFTLCD : public Adafruit_GFX {
   Adafruit_TFTLCD(uint8_t cs, uint8_t cd, uint8_t wr, uint8_t rd, uint8_t rst);
   Adafruit_TFTLCD(void);
 
+  void     setup(uint8_t cs, uint8_t cd, uint8_t wr, uint8_t rd, uint8_t rst);
   void     begin(uint16_t id = 0x9325);
   void     drawPixel(int16_t x, int16_t y, uint16_t color);
   void     drawFastHLine(int16_t x0, int16_t y0, int16_t w, uint16_t color);
@@ -42,6 +43,8 @@ class Adafruit_TFTLCD : public Adafruit_GFX {
   uint16_t color565(uint8_t r, uint8_t g, uint8_t b),
            readPixel(int16_t x, int16_t y),
            readID(void);
+
+  uint32_t readReg(uint8_t r);
 
  private:
 
@@ -62,6 +65,9 @@ class Adafruit_TFTLCD : public Adafruit_GFX {
 #endif
 #ifndef writeRegister16
            writeRegister16(uint16_t a, uint16_t d),
+#endif
+#ifndef writeRegister32
+           writeRegister32(uint16_t a, uint32_t d),
 #endif
 #ifndef writeRegisterPair
            writeRegisterPair(uint8_t aH, uint8_t aL, uint16_t d),
@@ -89,13 +95,7 @@ class Adafruit_TFTLCD : public Adafruit_GFX {
 					  csPinUnset,  cdPinUnset,  wrPinUnset,  rdPinUnset,
 					  _reset;
   #endif
-  #if defined(CORE_ADAX) || defined(CORE_MICROTOUCHX)
-    volatile uint8_t *csPort    , *cdPort    , *wrPort    , *rdPort;
-	uint8_t           csPinSet  ,  cdPinSet  ,  wrPinSet  ,  rdPinSet  ,
-					  csPinUnset,  cdPinUnset,  wrPinUnset,  rdPinUnset,
-					  _reset;
-  #endif
-  
+
 #endif
 };
 
