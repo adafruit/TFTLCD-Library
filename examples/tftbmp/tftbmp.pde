@@ -6,6 +6,7 @@
 #include <Adafruit_GFX.h>    // Core graphics library
 #include <Adafruit_TFTLCD.h> // Hardware-specific library
 #include <SD.h>
+#include <SPI.h>
 
 // The control pins for the LCD can be assigned to any digital or
 // analog pins...but we'll use the analog pins as this allows us to
@@ -38,6 +39,16 @@
 
 // our TFT wiring
 Adafruit_TFTLCD tft(LCD_CS, LCD_CD, LCD_WR, LCD_RD, A4);
+uint8_t spi_save;
+
+void disableSPI(void) {
+  spi_save = SPCR;
+  SPCR = 0;
+}
+
+void enableSPI(void) {
+  SPCR = spi_save; 
+}
 
 void setup()
 {
@@ -73,9 +84,14 @@ void setup()
     return;
   }
   Serial.println(F("OK!"));
+  spi_save = SPCR;
 
-  bmpDraw("woof.bmp", 0, 0);
-  delay(1000);
+  disableSPI();    // release SPI so we can use those pins to draw
+ 
+  tft.setRotation(3);
+  bmpDraw("tiger.bmp", 0, 0);
+  // disable the SD card interface after we are done!
+  disableSPI();
 }
 
 void loop()

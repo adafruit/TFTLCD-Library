@@ -6,6 +6,7 @@
 #include <Adafruit_GFX.h>    // Core graphics library
 #include <Adafruit_TFTLCD.h> // Hardware-specific library
 #include <SD.h>
+#include <SPI.h>
 
 // In the SD card, place 24 bit color BMP files (be sure they are 24-bit!)
 // There are examples in the sketch folder
@@ -13,7 +14,16 @@
 #define SD_CS 5 // Card select for shield use
 
 Adafruit_TFTLCD tft;
-uint8_t         spi_save;
+uint8_t spi_save;
+
+void disableSPI(void) {
+  spi_save = SPCR;
+  SPCR = 0;
+}
+
+void enableSPI(void) {
+  SPCR = spi_save; 
+}
 
 void setup()
 {
@@ -51,20 +61,16 @@ void setup()
   Serial.println(F("OK!"));
   spi_save = SPCR;
 
-  bmpDraw("woof.bmp", 0, 0);
-  delay(1000);
+  disableSPI();    // release SPI so we can use those pins to draw
+ 
+  tft.setRotation(3);
+  bmpDraw("tiger.bmp", 0, 0);
+  // disable the SD card interface after we are done!
+  disableSPI();
 }
 
 void loop()
 {
-  for(int i = 0; i<4; i++) {
-    tft.setRotation(i);
-    tft.fillScreen(0);
-    for(int j=0; j <= 200; j += 50) {
-      bmpDraw("miniwoof.bmp", j, j);
-    }
-    delay(1000);
-  }
 }
 
 // This function opens a Windows Bitmap (BMP) file and
@@ -222,4 +228,3 @@ uint32_t read32(File f) {
   ((uint8_t *)&result)[3] = f.read(); // MSB
   return result;
 }
-
