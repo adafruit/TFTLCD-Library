@@ -15,7 +15,7 @@
 
 // **** IF USING THE LCD BREAKOUT BOARD, COMMENT OUT THIS NEXT LINE. ****
 // **** IF USING THE LCD SHIELD, LEAVE THE LINE ENABLED:             ****
-#define USE_ADAFRUIT_SHIELD_PINOUT
+//#define USE_ADAFRUIT_SHIELD_PINOUT 1
 
 class Adafruit_TFTLCD : public Adafruit_GFX {
 
@@ -45,6 +45,7 @@ class Adafruit_TFTLCD : public Adafruit_GFX {
   uint16_t color565(uint8_t r, uint8_t g, uint8_t b),
            readPixel(int16_t x, int16_t y),
            readID(void);
+  uint32_t readReg(uint8_t r);
 
  private:
 
@@ -66,6 +67,7 @@ class Adafruit_TFTLCD : public Adafruit_GFX {
 #ifndef writeRegister16
            writeRegister16(uint16_t a, uint16_t d),
 #endif
+    writeRegister32(uint8_t a, uint32_t d),
 #ifndef writeRegisterPair
            writeRegisterPair(uint8_t aH, uint8_t aL, uint16_t d),
 #endif

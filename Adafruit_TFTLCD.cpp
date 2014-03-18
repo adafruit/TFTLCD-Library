@@ -18,69 +18,10 @@
 // LCD controller chip identifiers
 #define ID_932X    0
 #define ID_7575    1
+#define ID_9341    2
 #define ID_UNKNOWN 0xFF
 
-// Register names from Peter Barrett's Microtouch code
-#define ILI932X_START_OSC          0x00
-#define ILI932X_DRIV_OUT_CTRL      0x01
-#define ILI932X_DRIV_WAV_CTRL      0x02
-#define ILI932X_ENTRY_MOD          0x03
-#define ILI932X_RESIZE_CTRL        0x04
-#define ILI932X_DISP_CTRL1         0x07
-#define ILI932X_DISP_CTRL2         0x08
-#define ILI932X_DISP_CTRL3         0x09
-#define ILI932X_DISP_CTRL4         0x0A
-#define ILI932X_RGB_DISP_IF_CTRL1  0x0C
-#define ILI932X_FRM_MARKER_POS     0x0D
-#define ILI932X_RGB_DISP_IF_CTRL2  0x0F
-#define ILI932X_POW_CTRL1          0x10
-#define ILI932X_POW_CTRL2          0x11
-#define ILI932X_POW_CTRL3          0x12
-#define ILI932X_POW_CTRL4          0x13
-#define ILI932X_GRAM_HOR_AD        0x20
-#define ILI932X_GRAM_VER_AD        0x21
-#define ILI932X_RW_GRAM            0x22
-#define ILI932X_POW_CTRL7          0x29
-#define ILI932X_FRM_RATE_COL_CTRL  0x2B
-#define ILI932X_GAMMA_CTRL1        0x30
-#define ILI932X_GAMMA_CTRL2        0x31
-#define ILI932X_GAMMA_CTRL3        0x32
-#define ILI932X_GAMMA_CTRL4        0x35
-#define ILI932X_GAMMA_CTRL5        0x36
-#define ILI932X_GAMMA_CTRL6        0x37
-#define ILI932X_GAMMA_CTRL7        0x38
-#define ILI932X_GAMMA_CTRL8        0x39
-#define ILI932X_GAMMA_CTRL9        0x3C
-#define ILI932X_GAMMA_CTRL10       0x3D
-#define ILI932X_HOR_START_AD       0x50
-#define ILI932X_HOR_END_AD         0x51
-#define ILI932X_VER_START_AD       0x52
-#define ILI932X_VER_END_AD         0x53
-#define ILI932X_GATE_SCAN_CTRL1    0x60
-#define ILI932X_GATE_SCAN_CTRL2    0x61
-#define ILI932X_GATE_SCAN_CTRL3    0x6A
-#define ILI932X_PART_IMG1_DISP_POS 0x80
-#define ILI932X_PART_IMG1_START_AD 0x81
-#define ILI932X_PART_IMG1_END_AD   0x82
-#define ILI932X_PART_IMG2_DISP_POS 0x83
-#define ILI932X_PART_IMG2_START_AD 0x84
-#define ILI932X_PART_IMG2_END_AD   0x85
-#define ILI932X_PANEL_IF_CTRL1     0x90
-#define ILI932X_PANEL_IF_CTRL2     0x92
-#define ILI932X_PANEL_IF_CTRL3     0x93
-#define ILI932X_PANEL_IF_CTRL4     0x95
-#define ILI932X_PANEL_IF_CTRL5     0x97
-#define ILI932X_PANEL_IF_CTRL6     0x98
-
-#define HX8347G_COLADDRSTART_HI    0x02
-#define HX8347G_COLADDRSTART_LO    0x03
-#define HX8347G_COLADDREND_HI      0x04
-#define HX8347G_COLADDREND_LO      0x05
-#define HX8347G_ROWADDRSTART_HI    0x06
-#define HX8347G_ROWADDRSTART_LO    0x07
-#define HX8347G_ROWADDREND_HI      0x08
-#define HX8347G_ROWADDREND_LO      0x09
-#define HX8347G_MEMACCESS          0x16
+#include "registers.h"
 
 // Constructor for breakout board (configurable LCD control lines).
 // Can still use this w/shield, but parameters are ignored.
@@ -278,6 +219,32 @@ void Adafruit_TFTLCD::begin(uint16_t id) {
     setRotation(rotation);
     setAddrWindow(0, 0, TFTWIDTH-1, TFTHEIGHT-1);
 
+  } else if (id == 0x9341) {
+
+    uint16_t a, d;
+    driver = ID_9341;
+    CS_ACTIVE;
+    writeRegister8(ILI9341_SOFTRESET, 0);
+    delay(50);
+    writeRegister8(ILI9341_DISPLAYOFF, 0);
+
+    writeRegister8(ILI9341_POWERCONTROL1, 0x23);
+    writeRegister8(ILI9341_POWERCONTROL2, 0x10);
+    writeRegister16(ILI9341_VCOMCONTROL1, 0x2B2B);
+    writeRegister8(ILI9341_VCOMCONTROL2, 0xC0);
+    writeRegister8(ILI9341_MEMCONTROL, 0x48);
+    writeRegister8(ILI9341_PIXELFORMAT, 0x55);
+    writeRegister16(ILI9341_FRAMECONTROL, 0x001B);
+    
+    writeRegister8(ILI9341_ENTRYMODE, 0x07);
+    /* writeRegister32(ILI9341_DISPLAYFUNC, 0x0A822700);*/
+
+    writeRegister8(ILI9341_SLEEPOUT, 0);
+    delay(150);
+    writeRegister8(ILI9341_DISPLAYON, 0);
+    delay(500);
+    setAddrWindow(0, 0, TFTWIDTH-1, TFTHEIGHT-1);
+
   } else if(id == 0x7575) {
 
     uint8_t a, d;
@@ -389,6 +356,18 @@ void Adafruit_TFTLCD::setAddrWindow(int x1, int y1, int x2, int y2) {
     writeRegisterPair(HX8347G_COLADDREND_HI  , HX8347G_COLADDREND_LO  , x2);
     writeRegisterPair(HX8347G_ROWADDREND_HI  , HX8347G_ROWADDREND_LO  , y2);
 
+  } else if (driver == ID_9341) {
+    uint32_t t;
+
+    t = x1;
+    t <<= 16;
+    t |= x2;
+    writeRegister32(ILI9341_COLADDRSET, t);
+    t = y1;
+    t <<= 16;
+    t |= y2;
+    writeRegister32(ILI9341_PAGEADDRSET, t);
+
   }
   CS_IDLE;
 }
@@ -416,8 +395,14 @@ void Adafruit_TFTLCD::flood(uint16_t color, uint32_t len) {
 
   CS_ACTIVE;
   CD_COMMAND;
-  if(driver == ID_932X) write8(0x00); // High byte of GRAM register...
-  write8(0x22); // Write data to GRAM
+  if (driver == ID_9341) {
+    write8(0x2C);
+  } else if (driver == ID_932X) {
+    write8(0x00); // High byte of GRAM register...
+    write8(0x22); // Write data to GRAM
+  } else {
+    write8(0x22); // Write data to GRAM
+  }
 
   // Write first pixel normally, decrement counter by 1
   CD_DATA;
@@ -557,6 +542,8 @@ void Adafruit_TFTLCD::fillScreen(uint16_t color) {
     writeRegister16(0x0020, x);
     writeRegister16(0x0021, y);
 
+  } else if (driver == ID_9341) {
+    setAddrWindow(0, 0, _width - 1, _height - 1);
   } else if(driver == ID_7575) {
 
     // For the 7575, there is no settable address pointer, instead the
@@ -613,7 +600,15 @@ void Adafruit_TFTLCD::drawPixel(int16_t x, int16_t y, uint16_t color) {
     hi = color >> 8; lo = color;
     CD_COMMAND; write8(0x22); CD_DATA; write8(hi); write8(lo);
 
+  } else if (driver == ID_9341) {
+    setAddrWindow(x, y, 239, 319);
+    CS_ACTIVE;
+    CD_COMMAND; 
+    write8(0x2C);
+    CD_DATA; 
+    write8(color >> 8); write8(color);
   }
+
   CS_IDLE;
 }
 
@@ -735,6 +730,11 @@ uint16_t Adafruit_TFTLCD::readID(void) {
 
   uint16_t id;
 
+  id = readReg(0xD3);
+  if (id == 0x9341) {
+    return id;
+  }
+
   CS_ACTIVE;
   CD_COMMAND;
   write8(0x00);
@@ -749,6 +749,35 @@ uint16_t Adafruit_TFTLCD::readID(void) {
   CS_IDLE;
   setWriteDir();  // Restore LCD data port(s) to WRITE configuration
 
+
+  return id;
+}
+
+uint32_t Adafruit_TFTLCD::readReg(uint8_t r) {
+  uint32_t id;
+
+  // try reading register #4
+  CS_ACTIVE;
+  CD_COMMAND;
+  write8(r);
+  setReadDir();  // Set up LCD data port(s) for READ operations
+  CD_DATA;
+  delayMicroseconds(50);
+  id   = read8();        // Do not merge or otherwise simplify
+  id <<= 8;              // these lines.  It's an unfortunate
+  delayMicroseconds(50); // artifact of the macro substitution
+  id  |= read8();        // shenanigans that are going on.
+  id <<= 8;              // these lines.  It's an unfortunate
+  delayMicroseconds(50); // artifact of the macro substitution
+  id  |= read8();        // shenanigans that are going on.
+  id <<= 8;              // these lines.  It's an unfortunate
+  delayMicroseconds(50); // artifact of the macro substitution
+  id  |= read8();        // shenanigans that are going on.
+  CS_IDLE;
+  setWriteDir();  // Restore LCD data port(s) to WRITE configuration
+
+  Serial.print("Read $"); Serial.print(r, HEX); 
+  Serial.print(":\t0x"); Serial.println(id, HEX);
   return id;
 }
 
@@ -804,3 +833,20 @@ void Adafruit_TFTLCD::writeRegisterPair(uint8_t aH, uint8_t aL, uint16_t d) {
 }
 #endif
 
+
+void Adafruit_TFTLCD::writeRegister32(uint8_t r, uint32_t d) {
+  CS_ACTIVE;
+  CD_COMMAND;
+  write8(r);
+  CD_DATA;
+  delayMicroseconds(10);
+  write8(d >> 24);
+  delayMicroseconds(10);
+  write8(d >> 16);
+  delayMicroseconds(10);
+  write8(d >> 8);
+  delayMicroseconds(10);
+  write8(d);
+  CS_IDLE;
+
+}
