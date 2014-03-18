@@ -97,6 +97,8 @@ void setup(void) {
     Serial.println(F("Found ILI9328 LCD driver"));
   } else if(identifier == 0x7575) {
     Serial.println(F("Found HX8347G LCD driver"));
+  } else if(identifier == 0x9341) {
+    Serial.println(F("Found ILI9341 LCD driver"));
   } else {
     Serial.print(F("Unknown LCD driver chip: "));
     Serial.println(identifier, HEX);
@@ -127,7 +129,7 @@ void setup(void) {
 void loop()
 {
   digitalWrite(13, HIGH);
-  Point p = ts.getPoint();
+  TSPoint p = ts.getPoint();
   digitalWrite(13, LOW);
 
   // if sharing pins, you'll need to fix the directions of the touchscreen pins
