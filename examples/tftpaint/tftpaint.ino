@@ -6,6 +6,11 @@
 #include <Adafruit_TFTLCD.h> // Hardware-specific library
 #include <TouchScreen.h>
 
+#if defined(__SAM3X8E__)
+    #undef __FlashStringHelper::F(string_literal)
+    #define F(string_literal) string_literal
+#endif
+
 // When using the BREAKOUT BOARD only, use these 8 data lines to the LCD:
 // For the Arduino Uno, Duemilanove, Diecimila, etc.:
 //   D0 connects to digital pin 8  (Notice these are
@@ -16,8 +21,28 @@
 //   D5 connects to digital pin 5
 //   D6 connects to digital pin 6
 //   D7 connects to digital pin 7
+
 // For the Arduino Mega, use digital pins 22 through 29
 // (on the 2-row header at the end of the board).
+//   D0 connects to digital pin 22
+//   D1 connects to digital pin 23
+//   D2 connects to digital pin 24
+//   D3 connects to digital pin 25
+//   D4 connects to digital pin 26
+//   D5 connects to digital pin 27
+//   D6 connects to digital pin 28
+//   D7 connects to digital pin 29
+
+// For the Arduino Due, use digital pins 33 through 40
+// (on the 2-row header at the end of the board).
+//   D0 connects to digital pin 33
+//   D1 connects to digital pin 34
+//   D2 connects to digital pin 35
+//   D3 connects to digital pin 36
+//   D4 connects to digital pin 37
+//   D5 connects to digital pin 38
+//   D6 connects to digital pin 39
+//   D7 connects to digital pin 40
 
 #define YP A3  // must be an analog pin, use "An" notation!
 #define XM A2  // must be an analog pin, use "An" notation!
