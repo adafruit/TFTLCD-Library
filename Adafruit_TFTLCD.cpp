@@ -254,7 +254,7 @@ void Adafruit_TFTLCD::begin(uint16_t id) {
     writeRegister8(ILI9341_POWERCONTROL2, 0x10);
     writeRegister16(ILI9341_VCOMCONTROL1, 0x2B2B);
     writeRegister8(ILI9341_VCOMCONTROL2, 0xC0);
-    writeRegister8(ILI9341_MEMCONTROL, 0x48);
+    writeRegister8(ILI9341_MEMCONTROL, ILI9341_MADCTL_MY | ILI9341_MADCTL_BGR);
     writeRegister8(ILI9341_PIXELFORMAT, 0x55);
     writeRegister16(ILI9341_FRAMECONTROL, 0x001B);
     
@@ -678,7 +678,8 @@ void Adafruit_TFTLCD::setRotation(uint8_t x) {
     // For 932X, init default full-screen address window:
     setAddrWindow(0, 0, _width - 1, _height - 1); // CS_IDLE happens here
 
-  } if(driver == ID_7575) {
+  }
+ if(driver == ID_7575) {
 
     uint8_t t;
     switch(rotation) {
@@ -692,7 +693,28 @@ void Adafruit_TFTLCD::setRotation(uint8_t x) {
     // drawPixel() cheats by setting only the top left...by default,
     // the lower right is always reset to the corner.
     setLR(); // CS_IDLE happens here
+  }
 
+ if(driver == ID_9341) {
+   uint16_t t;
+
+   switch (rotation) {
+   case 2:
+     t = ILI9341_MADCTL_MX | ILI9341_MADCTL_BGR;
+     break;
+   case 3:
+     t = ILI9341_MADCTL_MV | ILI9341_MADCTL_BGR;
+     break;
+  case 0:
+    t = ILI9341_MADCTL_MY | ILI9341_MADCTL_BGR;
+    break;
+   case 1:
+     t = ILI9341_MADCTL_MX | ILI9341_MADCTL_MY | ILI9341_MADCTL_MV | ILI9341_MADCTL_BGR;
+     break;
+  }
+   writeRegister8(ILI9341_MADCTL, t ); // MADCTL
+   // For 9341, init default full-screen address window:
+   setAddrWindow(0, 0, _width - 1, _height - 1); // CS_IDLE happens here
   }
 }
 
