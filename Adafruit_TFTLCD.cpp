@@ -772,7 +772,7 @@ uint16_t Adafruit_TFTLCD::readID(void) {
 
   uint8_t hi, lo;
 
-  id = readReg(0xD3);
+  uint16_t id = readReg(0xD3);
   if (id == 0x9341) {
     return id;
   }
@@ -788,11 +788,13 @@ uint16_t Adafruit_TFTLCD::readID(void) {
   setWriteDir();  // Restore LCD data port(s) to WRITE configuration
   CS_IDLE;
 
-  return (hi << 8) | lo;
+  id = hi; id <<= 8; id |= lo;
+  return id;
 }
 
 uint32_t Adafruit_TFTLCD::readReg(uint8_t r) {
   uint32_t id;
+  uint8_t x;
 
   // try reading register #4
   CS_ACTIVE;
@@ -801,21 +803,22 @@ uint32_t Adafruit_TFTLCD::readReg(uint8_t r) {
   setReadDir();  // Set up LCD data port(s) for READ operations
   CD_DATA;
   delayMicroseconds(50);
-  id   = read8();        // Do not merge or otherwise simplify
+  read8(x);
+  id = x;          // Do not merge or otherwise simplify
   id <<= 8;              // these lines.  It's an unfortunate
-  delayMicroseconds(50); // artifact of the macro substitution
-  id  |= read8();        // shenanigans that are going on.
+  read8(x);
+  id  |= x;        // shenanigans that are going on.
   id <<= 8;              // these lines.  It's an unfortunate
-  delayMicroseconds(50); // artifact of the macro substitution
-  id  |= read8();        // shenanigans that are going on.
+  read8(x);
+  id  |= x;        // shenanigans that are going on.
   id <<= 8;              // these lines.  It's an unfortunate
-  delayMicroseconds(50); // artifact of the macro substitution
-  id  |= read8();        // shenanigans that are going on.
+  read8(x);
+  id  |= x;        // shenanigans that are going on.
   CS_IDLE;
   setWriteDir();  // Restore LCD data port(s) to WRITE configuration
 
-  Serial.print("Read $"); Serial.print(r, HEX); 
-  Serial.print(":\t0x"); Serial.println(id, HEX);
+  //Serial.print("Read $"); Serial.print(r, HEX); 
+  //Serial.print(":\t0x"); Serial.println(id, HEX);
   return id;
 }
 
