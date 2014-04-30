@@ -29,6 +29,8 @@ void setup()
     Serial.println(F("Found ILI9328 LCD driver"));
   } else if(identifier == 0x7575) {
     Serial.println(F("Found HX8347G LCD driver"));
+  } else if(identifier == 0x9341) {
+    Serial.println(F("Found ILI9341 LCD driver"));
   } else {
     Serial.print(F("Unknown LCD driver chip: "));
     Serial.println(identifier, HEX);
