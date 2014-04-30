@@ -645,7 +645,11 @@ void Adafruit_TFTLCD::pushColors(uint16_t *data, uint8_t len, boolean first) {
   if(first == true) { // Issue GRAM write command only on first call
     CD_COMMAND;
     if(driver == ID_932X) write8(0x00);
-    write8(0x22);
+     if (driver == ID_9341) {
+       write8(0x2C);
+     }  else {
+       write8(0x22);
+     }
   }
   CD_DATA;
   while(len--) {
