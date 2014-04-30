@@ -103,7 +103,7 @@ void setup(void) {
 void loop()
 {
   digitalWrite(13, HIGH);
-  Point p = ts.getPoint();
+  TSPoint p = ts.getPoint();
   digitalWrite(13, LOW);
 
   // if sharing pins, you'll need to fix the directions of the touchscreen pins
