@@ -318,7 +318,6 @@ void Adafruit_TFTLCD::reset(void) {
 // Relevant to rect/screen fills and H/V lines.  Input coordinates are
 // assumed pre-sorted (e.g. x2 >= x1).
 void Adafruit_TFTLCD::setAddrWindow(int x1, int y1, int x2, int y2) {
-
   CS_ACTIVE;
   if(driver == ID_932X) {
 
@@ -623,7 +622,7 @@ void Adafruit_TFTLCD::drawPixel(int16_t x, int16_t y, uint16_t color) {
     CD_COMMAND; write8(0x22); CD_DATA; write8(hi); write8(lo);
 
   } else if (driver == ID_9341) {
-    setAddrWindow(x, y, 239, 319);
+    setAddrWindow(x, y, _width-1, _height-1);
     CS_ACTIVE;
     CD_COMMAND; 
     write8(0x2C);
