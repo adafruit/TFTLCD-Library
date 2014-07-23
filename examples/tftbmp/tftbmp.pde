@@ -1,7 +1,7 @@
 // BMP-loading example specifically for the TFTLCD breakout board.
 // If using the Arduino shield, use the tftbmp_shield.pde sketch instead!
-// If using an Arduino Mega, make sure the SD library is configured for
-// 'soft' SPI in the file Sd2Card.h.
+// If using an Arduino Mega make sure to use its hardware SPI pins, OR make
+// sure the SD library is configured for 'soft' SPI in the file Sd2Card.h.
 
 #include <Adafruit_GFX.h>    // Core graphics library
 #include <Adafruit_TFTLCD.h> // Hardware-specific library
