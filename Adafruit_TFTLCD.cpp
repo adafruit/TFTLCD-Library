@@ -18,6 +18,9 @@
 #include "Adafruit_TFTLCD.h"
 #include "pin_magic.h"
 
+//#define TFTWIDTH   320
+//#define TFTHEIGHT  480
+
 #define TFTWIDTH   240
 #define TFTHEIGHT  320
 
@@ -25,6 +28,7 @@
 #define ID_932X    0
 #define ID_7575    1
 #define ID_9341    2
+#define ID_HX8357D    3
 #define ID_UNKNOWN 0xFF
 
 #include "registers.h"
@@ -168,6 +172,28 @@ static const uint8_t HX8347G_regValues[] PROGMEM = {
   0x09           , 0x3F
 };
 
+static const uint8_t HX8357D_regValues[] PROGMEM = {
+  HX8357_SWRESET, 0,
+  HX8357D_SETC, 3, 0xFF, 0x83, 0x57,
+  TFTLCD_DELAY, 250,
+  HX8357_SETRGB, 4, 0x00, 0x00, 0x06, 0x06,
+  HX8357D_SETCOM, 1, 0x25,  // -1.52V
+  HX8357_SETOSC, 1, 0x68,  // Normal mode 70Hz, Idle mode 55 Hz
+  HX8357_SETPANEL, 1, 0x05,  // BGR, Gate direction swapped
+  HX8357_SETPWR1, 6, 0x00, 0x15, 0x1C, 0x1C, 0x83, 0xAA,
+  HX8357D_SETSTBA, 6, 0x50, 0x50, 0x01, 0x3C, 0x1E, 0x08,
+  // MEME GAMMA HERE
+  HX8357D_SETCYC, 7, 0x02, 0x40, 0x00, 0x2A, 0x2A, 0x0D, 0x78,
+  HX8357_COLMOD, 1, 0x55,
+  HX8357_MADCTL, 1, 0xC0,
+  HX8357_TEON, 1, 0x00,
+  HX8357_TEARLINE, 2, 0x00, 0x02,
+  HX8357_SLPOUT, 0,
+  TFTLCD_DELAY, 150,
+  HX8357_DISPON, 0, 
+  TFTLCD_DELAY, 50,
+};
+
 static const uint16_t ILI932x_regValues[] PROGMEM = {
   ILI932X_START_OSC        , 0x0001, // Start oscillator
   TFTLCD_DELAY             , 50,     // 50 millisecond delay
@@ -227,6 +253,8 @@ void Adafruit_TFTLCD::begin(uint16_t id) {
 
   reset();
 
+  delay(200);
+
   if((id == 0x9325) || (id == 0x9328)) {
 
     uint16_t a, d;
@@ -266,6 +294,32 @@ void Adafruit_TFTLCD::begin(uint16_t id) {
     writeRegister8(ILI9341_DISPLAYON, 0);
     delay(500);
     setAddrWindow(0, 0, TFTWIDTH-1, TFTHEIGHT-1);
+
+  } if (id == 0x8357) {
+    // HX8357D
+    driver = ID_HX8357D;
+    CS_ACTIVE;
+     while(i < sizeof(HX8357D_regValues)) {
+      uint8_t r = pgm_read_byte(&HX8357D_regValues[i++]);
+      uint8_t len = pgm_read_byte(&HX8357D_regValues[i++]);
+      if(r == TFTLCD_DELAY) {
+	delay(len);
+      } else {
+	//Serial.print("Register $"); Serial.print(r, HEX);
+	//Serial.print(" datalen "); Serial.println(len);
+
+	CS_ACTIVE;
+	CD_COMMAND;
+	write8(r);
+	CD_DATA;
+	for (uint8_t d=0; d<len; d++) {
+	  uint8_t x = pgm_read_byte(&HX8357D_regValues[i++]);
+	  write8(x);
+	}
+	CS_IDLE;
+
+      }
+    }
 
   } else if(id == 0x7575) {
 
@@ -378,17 +432,17 @@ void Adafruit_TFTLCD::setAddrWindow(int x1, int y1, int x2, int y2) {
     writeRegisterPair(HX8347G_COLADDREND_HI  , HX8347G_COLADDREND_LO  , x2);
     writeRegisterPair(HX8347G_ROWADDREND_HI  , HX8347G_ROWADDREND_LO  , y2);
 
-  } else if (driver == ID_9341) {
+  } else if ((driver == ID_9341) || (driver == ID_HX8357D)){
     uint32_t t;
 
     t = x1;
     t <<= 16;
     t |= x2;
-    writeRegister32(ILI9341_COLADDRSET, t);
+    writeRegister32(ILI9341_COLADDRSET, t);  // HX8357D uses same registers!
     t = y1;
     t <<= 16;
     t |= y2;
-    writeRegister32(ILI9341_PAGEADDRSET, t);
+    writeRegister32(ILI9341_PAGEADDRSET, t); // HX8357D uses same registers!
 
   }
   CS_IDLE;
@@ -422,6 +476,8 @@ void Adafruit_TFTLCD::flood(uint16_t color, uint32_t len) {
   } else if (driver == ID_932X) {
     write8(0x00); // High byte of GRAM register...
     write8(0x22); // Write data to GRAM
+  } if (driver == ID_HX8357D) {
+    write8(HX8357_RAMWR);
   } else {
     write8(0x22); // Write data to GRAM
   }
@@ -564,11 +620,8 @@ void Adafruit_TFTLCD::fillScreen(uint16_t color) {
     writeRegister16(0x0020, x);
     writeRegister16(0x0021, y);
 
-  } else if (driver == ID_9341) {
-    setAddrWindow(0, 0, _width - 1, _height - 1);
-  } else if(driver == ID_7575) {
-
-    // For the 7575, there is no settable address pointer, instead the
+  } else if ((driver == ID_9341) || (driver == ID_7575) || (driver == ID_HX8357D)) {
+    // For these, there is no settable address pointer, instead the
     // address window must be set for each drawing operation.  However,
     // this display takes rotation into account for the parameters, no
     // need to do extra rotation math here.
@@ -622,8 +675,8 @@ void Adafruit_TFTLCD::drawPixel(int16_t x, int16_t y, uint16_t color) {
     hi = color >> 8; lo = color;
     CD_COMMAND; write8(0x22); CD_DATA; write8(hi); write8(lo);
 
-  } else if (driver == ID_9341) {
-    setAddrWindow(x, y, 239, 319);
+  } else if ((driver == ID_9341) || (driver == ID_HX8357D)) {
+    setAddrWindow(x, y, TFTWIDTH-1, TFTHEIGHT-1);
     CS_ACTIVE;
     CD_COMMAND; 
     write8(0x2C);
@@ -645,7 +698,7 @@ void Adafruit_TFTLCD::pushColors(uint16_t *data, uint8_t len, boolean first) {
   if(first == true) { // Issue GRAM write command only on first call
     CD_COMMAND;
     if(driver == ID_932X) write8(0x00);
-     if (driver == ID_9341) {
+    if ((driver == ID_9341) || (driver == ID_HX8357D)){
        write8(0x2C);
      }  else {
        write8(0x22);
@@ -699,7 +752,8 @@ void Adafruit_TFTLCD::setRotation(uint8_t x) {
     setLR(); // CS_IDLE happens here
   }
 
- if(driver == ID_9341) {
+ if ((driver == ID_9341) || (driver == ID_HX8357D)) { 
+   // MEME, HX8357D uses same registers but different values
    uint16_t t;
 
    switch (rotation) {
@@ -797,6 +851,30 @@ uint16_t Adafruit_TFTLCD::readPixel(int16_t x, int16_t y) {
 uint16_t Adafruit_TFTLCD::readID(void) {
 
   uint8_t hi, lo;
+
+  /*
+  for (uint8_t i=0; i<128; i++) {
+    Serial.print("$"); Serial.print(i, HEX);
+    Serial.print(" = 0x"); Serial.println(readReg(i), HEX);
+  }
+  */
+
+  if (readReg(0x04) == 0x8000) { // eh close enough
+    // setc!
+    /*
+      Serial.println("!");
+      for (uint8_t i=0; i<254; i++) {
+      Serial.print("$"); Serial.print(i, HEX);
+      Serial.print(" = 0x"); Serial.println(readReg(i), HEX);
+      }
+    */
+    writeRegister24(HX8357D_SETC, 0xFF8357);
+    delay(300);
+    //Serial.println(readReg(0xD0), HEX);
+    if (readReg(0xD0) == 0x990000) {
+      return 0x8357;
+    }
+  }
 
   uint16_t id = readReg(0xD3);
   if (id == 0x9341) {
@@ -899,6 +977,22 @@ void Adafruit_TFTLCD::writeRegisterPair(uint8_t aH, uint8_t aL, uint16_t d) {
   writeRegisterPairInline(aH, aL, d);
 }
 #endif
+
+
+void Adafruit_TFTLCD::writeRegister24(uint8_t r, uint32_t d) {
+  CS_ACTIVE;
+  CD_COMMAND;
+  write8(r);
+  CD_DATA;
+  delayMicroseconds(10);
+  write8(d >> 16);
+  delayMicroseconds(10);
+  write8(d >> 8);
+  delayMicroseconds(10);
+  write8(d);
+  CS_IDLE;
+
+}
 
 
 void Adafruit_TFTLCD::writeRegister32(uint8_t r, uint32_t d) {

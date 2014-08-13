@@ -65,6 +65,7 @@ class Adafruit_TFTLCD : public Adafruit_GFX {
 #ifndef writeRegister16
            writeRegister16(uint16_t a, uint16_t d),
 #endif
+    writeRegister24(uint8_t a, uint32_t d),
     writeRegister32(uint8_t a, uint32_t d),
 #ifndef writeRegisterPair
            writeRegisterPair(uint8_t aH, uint8_t aL, uint16_t d),
