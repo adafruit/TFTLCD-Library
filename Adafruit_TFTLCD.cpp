@@ -294,8 +294,9 @@ void Adafruit_TFTLCD::begin(uint16_t id) {
     writeRegister8(ILI9341_DISPLAYON, 0);
     delay(500);
     setAddrWindow(0, 0, TFTWIDTH-1, TFTHEIGHT-1);
+    return;
 
-  } if (id == 0x8357) {
+  } else if (id == 0x8357) {
     // HX8357D
     driver = ID_HX8357D;
     CS_ACTIVE;
@@ -320,7 +321,8 @@ void Adafruit_TFTLCD::begin(uint16_t id) {
 
       }
     }
-
+     return;
+     
   } else if(id == 0x7575) {
 
     uint8_t a, d;
@@ -475,7 +477,7 @@ void Adafruit_TFTLCD::flood(uint16_t color, uint32_t len) {
   } else if (driver == ID_932X) {
     write8(0x00); // High byte of GRAM register...
     write8(0x22); // Write data to GRAM
-  } if (driver == ID_HX8357D) {
+  } else if (driver == ID_HX8357D) {
     write8(HX8357_RAMWR);
   } else {
     write8(0x22); // Write data to GRAM
