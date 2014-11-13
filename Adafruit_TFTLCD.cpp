@@ -753,8 +753,8 @@ void Adafruit_TFTLCD::setRotation(uint8_t x) {
     setLR(); // CS_IDLE happens here
   }
 
- if ((driver == ID_9341) || (driver == ID_HX8357D)) { 
-   // MEME, HX8357D uses same registers but different values
+ if (driver == ID_9341) { 
+   // MEME, HX8357D uses same registers as 9341 but different values
    uint16_t t;
 
    switch (rotation) {
@@ -775,7 +775,29 @@ void Adafruit_TFTLCD::setRotation(uint8_t x) {
    // For 9341, init default full-screen address window:
    setAddrWindow(0, 0, _width - 1, _height - 1); // CS_IDLE happens here
   }
-}
+  
+  if (driver == ID_HX8357D) { 
+    // MEME, HX8357D uses same registers as 9341 but different values
+    uint16_t t;
+    
+    switch (rotation) {
+      case 2:
+        t = HX8357B_MADCTL_RGB;
+        break;
+      case 3:
+        t = HX8357B_MADCTL_MX | HX8357B_MADCTL_MV | HX8357B_MADCTL_RGB;
+        break;
+      case 0:
+        t = HX8357B_MADCTL_MX | HX8357B_MADCTL_MY | HX8357B_MADCTL_RGB;
+        break;
+      case 1:
+        t = HX8357B_MADCTL_MY | HX8357B_MADCTL_MV | HX8357B_MADCTL_RGB;
+        break;
+    }
+    writeRegister8(ILI9341_MADCTL, t ); // MADCTL
+    // For 8357, init default full-screen address window:
+    setAddrWindow(0, 0, _width - 1, _height - 1); // CS_IDLE happens here
+  }}
 
 #ifdef read8isFunctionalized
   #define read8(x) x=read8fn()
