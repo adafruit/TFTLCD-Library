@@ -19,6 +19,10 @@
 
 //#define USE_ADAFRUIT_SHIELD_PINOUT 1
 
+// Some ILI9341 based kits have mirrored X or Y, uncomment/comment respectively
+//# define ILI9341_MIRROR_X 1
+# define ILI9341_MIRROR_Y 1
+
 class Adafruit_TFTLCD : public Adafruit_GFX {
 
  public:
@@ -43,7 +47,9 @@ class Adafruit_TFTLCD : public Adafruit_GFX {
   uint16_t color565(uint8_t r, uint8_t g, uint8_t b),
            readPixel(int16_t x, int16_t y),
            readID(void);
-  uint32_t readReg(uint8_t r);
+  uint8_t readReg8(uint8_t r);
+  uint16_t readReg16(uint8_t r);
+  uint32_t readReg32(uint8_t r);
 
  private:
 
@@ -67,6 +73,7 @@ class Adafruit_TFTLCD : public Adafruit_GFX {
 #endif
     writeRegister24(uint8_t a, uint32_t d),
     writeRegister32(uint8_t a, uint32_t d),
+    writeRegister40(uint8_t a, uint32_t d1, uint8_t d2),
 #ifndef writeRegisterPair
            writeRegisterPair(uint8_t aH, uint8_t aL, uint16_t d),
 #endif
