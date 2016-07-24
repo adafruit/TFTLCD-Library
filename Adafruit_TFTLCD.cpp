@@ -274,25 +274,102 @@ void Adafruit_TFTLCD::begin(uint16_t id) {
     uint16_t a, d;
     driver = ID_9341;
     CS_ACTIVE;
+
+    /* Software Reset (01h)
+     * TODO: This register does not accept parameters
+     */
     writeRegister8(ILI9341_SOFTRESET, 0);
+    /* Worst case delay after soft reset */
     delay(50);
+
+    /* Display OFF (28h)
+     * TODO: This register does not accept parameters
+     */
     writeRegister8(ILI9341_DISPLAYOFF, 0);
 
+    /* Power Control 1 (C0h)
+     * Reset value: 21h
+     * - D[5:0]: VRH[5:0] = 6'b100011: 4.60 V 
+     *   Set the GVDD level, which is a reference level for the VCOM 
+     *   level and the grayscale voltage level.
+     */
     writeRegister8(ILI9341_POWERCONTROL1, 0x23);
+
+    /* Power Control 2 (C1h)
+     * Reset value: 10h:
+     * - D[4]:           = 1'b1
+     * - D[2:0]: BT[2:0] = 3'b000:
+     *   - Sets the factor used in the step-up circuits.
+     *   - AVDD: VCIx2
+     *   - VGH:  VCHx7
+     *   - VGL:  -VCIx4
+     */
     writeRegister8(ILI9341_POWERCONTROL2, 0x10);
+
+    /* VCOM Control 1 (C5h)
+     * Reset value: 313Ch
+     * - D[7:0]:  VMH[6:0] = 7'b00101011: VCOMH = 3.775V
+     * - D[15:8]: VML[6:0] = 7'b00101011: VCOML = -1.425V
+     */
     writeRegister16(ILI9341_VCOMCONTROL1, 0x2B2B);
+
+    /* VCOM Control 2 (C7h)
+     * Reset value: C0h
+     * - D[7]:   nVM      = 1'b1        VMF [6:0] becomes valid
+     * - D[6:0]: VMF[6:0] = 7'b1000000  VCOMH = VMH; VCOML = VML
+     */
     writeRegister8(ILI9341_VCOMCONTROL2, 0xC0);
+
+    /* Memory Access Control (36h) 
+     * Reset value: 00h
+     * - D[7]: MY  = 1'b1       Row Address Order
+     * - D[6]: MX  = 1'b0       Column Address Order
+     * - D[5]: MV  = 1'b0       Row / Column Exchange
+     * - D[4]: ML  = 1'b0       Vertical Refresh Order
+     * - D[3]: BGR = 1'b1       RGB-BGR Order: BGR color filter panel
+     * - D[2]: MH  = 1'b0       Horizontal Refresh ORDER
+     */
     writeRegister8(ILI9341_MEMCONTROL, ILI9341_MADCTL_MY | ILI9341_MADCTL_BGR);
+
+    /* COLMOD: Pixel Format Set (3Ah)
+     * Reset value: 66h
+     * - D[6:4]: DPI[2:0] = 3'b101  16 bits / pixel
+     * - D[2:0]: DBI[2:0] = 3'b101  16 bits / pixel
+     */
     writeRegister8(ILI9341_PIXELFORMAT, 0x55);
+
+    /* Frame Rate Control (In Normal Mode/Full Colors) (B1h)
+     * Reset value: 001Bh
+     * D[1:0]:  DIVA[1:0] = 2'b00    Division Ratio = fosc
+     * D[12:8]: RTNA[4:0] = 5'b11011 Frame Rate: 70Hz (default)
+     */
     writeRegister16(ILI9341_FRAMECONTROL, 0x001B);
     
+    /* Entry Mode Set (B7h)
+     * Reset value: 06h
+     * D[3]: DSTB = 1'b0        Deep Standby Mode: Disable
+     * D[2]: GON  = 1'b1        G1~G320 Gate Output: Normal display
+     * D[1]: DTE  = 1'b1        G1~G320 Gate Output: Normal display
+     * D[0]: GAS  = 1'b1        Low voltage detection: Disable
+     */
     writeRegister8(ILI9341_ENTRYMODE, 0x07);
+
+    /* Display Function Control (B6h) */
     /* writeRegister32(ILI9341_DISPLAYFUNC, 0x0A822700);*/
 
+    /* Enter Sleep Mode (10h)
+     * TODO: This register does not accept parameters
+     */
     writeRegister8(ILI9341_SLEEPOUT, 0);
     delay(150);
+
+    /* Display ON (29h)
+     * TODO: This register does not accept parameters
+     */
     writeRegister8(ILI9341_DISPLAYON, 0);
     delay(500);
+
+    /* Configure Column Address Set (2Ah) and Page Address Set (2Bh) */
     setAddrWindow(0, 0, TFTWIDTH-1, TFTHEIGHT-1);
     return;
 
