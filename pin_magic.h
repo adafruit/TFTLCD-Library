@@ -68,12 +68,33 @@
 
  #ifdef USE_ADAFRUIT_SHIELD_PINOUT
 
+  // Display - Arduino port/pins: 
+  // +---------+--------+---------+------+
+  // | Display | Analog | Arduino | IC   |
+  // |         | Touch  | pin     | pin  |
+  // +---------+--------+---------+------+
+  // | RD      | -      | A0      | PC0  |
+  // | WR      | -      | A1      | PC1  |
+  // | RS      | XM     | A2      | PC2  |
+  // | CS      | YP     | A3      | PC3  |
+  // | RESET   | -      | A4      | PC4  |
+  // |         |        |         |      |
+  // | D0      | XP     | 8       | PB0  |
+  // | D1      | YM     | 9       | PB1  |
+  // | D2      |        | 10      | PB2  |
+  // | D3      |        | 11      | PB3  |
+  // | D4      |        | 4       | PD4  |
+  // | D5      |        | 13      | PB5  |
+  // | D6      |        | 6       | PD6  |
+  // | D7      |        | 7       | PD7  |
+  // +---------+--------+---------+------+
+
   // LCD control lines:
   // RD (read), WR (write), CD (command/data), CS (chip select)
-  #define RD_PORT PORTC				/*pin A0 */
-  #define WR_PORT PORTC				/*pin A1 */
-  #define CD_PORT PORTC				/*pin A2 */
-  #define CS_PORT PORTC				/*pin A3 */
+  #define RD_PORT PORTC				/* pin A0 */
+  #define WR_PORT PORTC				/* pin A1 */
+  #define CD_PORT PORTC				/* pin A2 */
+  #define CS_PORT PORTC				/* pin A3 */
   #define RD_MASK B00000001
   #define WR_MASK B00000010
   #define CD_MASK B00000100
@@ -107,6 +128,27 @@
 
  #else // Uno w/Breakout board
 
+  // Display - Arduino port/pins: 
+  // +---------+--------+---------+------+
+  // | Display | Analog | Arduino | IC   |
+  // |         | Touch  | pin     | pin  |
+  // +---------+--------+---------+------+
+  // | RD      | -      | A0      | PC0  |
+  // | WR      | -      | A1      | PC1  |
+  // | RS      | XM     | A2      | PC2  |
+  // | CS      | YP     | A3      | PC3  |
+  // | RESET   | -      | A4      | PC4  |
+  // |         |        |         |      |
+  // | D0      | XP     | 8       | PB0  |
+  // | D1      | YM     | 9       | PB1  |
+  // | D2      |        | 2       | PD2  |
+  // | D3      |        | 3       | PD3  |
+  // | D4      |        | 4       | PD4  |
+  // | D5      |        | 5       | PD5  |
+  // | D6      |        | 6       | PD6  |
+  // | D7      |        | 7       | PD7  |
+  // +---------+--------+---------+------+
+
   #define write8inline(d) {                          \
     PORTD = (PORTD & B00000011) | ((d) & B11111100); \
     PORTB = (PORTB & B11111100) | ((d) & B00000011); \
@@ -135,10 +177,31 @@
 
  #ifdef USE_ADAFRUIT_SHIELD_PINOUT
 
-  #define RD_PORT PORTF
-  #define WR_PORT PORTF
-  #define CD_PORT PORTF
-  #define CS_PORT PORTF
+  // Display - Arduino port/pins: 
+  // +---------+--------+---------+------+
+  // | Display | Analog | Arduino | IC   |
+  // |         | Touch  | pin     | pin  |
+  // +---------+--------+---------+------+
+  // | RD      | -      | A0      | PC0  |
+  // | WR      | -      | A1      | PC1  |
+  // | RS      | XM     | A2      | PC2  |
+  // | CS      | YP     | A3      | PC3  |
+  // | RESET   | -      | A4      | PC4  |
+  // |         |        |         |      |
+  // | D0      | XP     | 8       | PH5  |
+  // | D1      | YM     | 9       | PH6  |
+  // | D2      |        | 10      | PB4  |
+  // | D3      |        | 11      | PB5  |
+  // | D4      |        | 4       | PG5  |
+  // | D5      |        | 13      | PB7  |
+  // | D6      |        | 6       | PH3  |
+  // | D7      |        | 7       | PH4  |
+  // +---------+--------+---------+------+
+
+  #define RD_PORT PORTF				/* pin A0 */
+  #define WR_PORT PORTF				/* pin A1 */
+  #define CD_PORT PORTF				/* pin A2 */
+  #define CS_PORT PORTF				/* pin A3 */
   #define RD_MASK B00000001
   #define WR_MASK B00000010
   #define CD_MASK B00000100
@@ -161,6 +224,27 @@
     DDRH &= ~B01111000; DDRB &= ~B10110000; DDRG &= ~B00100000; }
 
  #else // Mega w/Breakout board
+
+  // Display - Arduino port/pins: 
+  // +---------+--------+---------+------+
+  // | Display | Analog | Arduino | IC   |
+  // |         | Touch  | pin     | pin  |
+  // +---------+--------+---------+------+
+  // | RD      | -      | A0      | PC0  |
+  // | WR      | -      | A1      | PC1  |
+  // | RS      | XM     | A2      | PC2  |
+  // | CS      | YP     | A3      | PC3  |
+  // | RESET   | -      | A4      | PC4  |
+  // |         |        |         |      |
+  // | D0      | XP     | 22      | PA0  |
+  // | D1      | YM     | 23      | PA1  |
+  // | D2      |        | 24      | PA2  |
+  // | D3      |        | 25      | PA3  |
+  // | D4      |        | 26      | PA4  |
+  // | D5      |        | 27      | PA5  |
+  // | D6      |        | 28      | PA6  |
+  // | D7      |        | 29      | PA7  |
+  // +---------+--------+---------+------+
 
   #define write8inline(d)   { PORTA = (d); WR_STROBE; }
   #define read8inline(result) { \
@@ -193,10 +277,10 @@
 
  #ifdef USE_ADAFRUIT_SHIELD_PINOUT
 
-  #define RD_PORT PORTF
-  #define WR_PORT PORTF
-  #define CD_PORT PORTF
-  #define CS_PORT PORTF
+  #define RD_PORT PORTF				/* pin A0 */
+  #define WR_PORT PORTF				/* pin A1 */
+  #define CD_PORT PORTF				/* pin A2 */
+  #define CS_PORT PORTF				/* pin A3 */
   #define RD_MASK B10000000
   #define WR_MASK B01000000
   #define CD_MASK B00100000
@@ -261,10 +345,10 @@
 
  #ifdef USE_ADAFRUIT_SHIELD_PINOUT
 
-  #define RD_PORT PIOA				/*pin A0 */	
-  #define WR_PORT PIOA				/*pin A1 */
-  #define CD_PORT PIOA				/*pin A2 */
-  #define CS_PORT PIOA				/*pin A3 */
+  #define RD_PORT PIOA				/* pin A0 */
+  #define WR_PORT PIOA				/* pin A1 */
+  #define CD_PORT PIOA				/* pin A2 */
+  #define CS_PORT PIOA				/* pin A3 */
   #define RD_MASK 0x00010000
   #define WR_MASK 0x01000000
   #define CD_MASK 0x00800000
