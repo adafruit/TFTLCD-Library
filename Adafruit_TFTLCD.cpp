@@ -360,6 +360,12 @@ void Adafruit_TFTLCD::reset(void) {
     delay(2);
     digitalWrite(_reset, HIGH);
   }
+
+  // According to the ILI9341 datasheet, a delay of at least 5ms is
+  // required after releasing the RESET signal before sending
+  // commands. Some displays won't start after power-on without this
+  // delay.
+  delay(5);
 #endif
 
   // Data transfer sync
