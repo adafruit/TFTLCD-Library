@@ -144,21 +144,23 @@
   #define CD_MASK B00000100
   #define CS_MASK B00001000
 
-  #define write8inline(d) {                                              \
-    PORTH = (PORTH&B10000111)|(((d)&B11000000)>>3)|(((d)&B00000011)<<5); \
-    PORTB = (PORTB&B01001111)|(((d)&B00101100)<<2);                      \
-    PORTG = (PORTG&B11011111)|(((d)&B00010000)<<1);                      \
-    WR_STROBE; }
-  #define read8inline(result) {                                      \
-    RD_ACTIVE;                                                       \
-    DELAY7;                                                          \
-    result = ((PINH & B00011000) << 3) | ((PINB & B10110000) >> 2) | \
-             ((PING & B00100000) >> 1) | ((PINH & B01100000) >> 5);  \
+ #define write8inline(d) {                          \
+  PORTE = (PORTE & B11001111) | ((d << 2) & B00110000); \
+  PORTE = (PORTE & B11110111) | ((d >> 2) & B00001000); \
+  PORTG = (PORTG & B11011111) | ((d << 1) & B00100000); \
+  PORTH = (PORTH & B11100111) | ((d >> 3) & B00011000); \
+  PORTH = (PORTH & B10011111) | ((d << 5) & B01100000); \
+  WR_STROBE; }
+  #define read8inline(result) {                       \
+    RD_ACTIVE;                                        \
+    DELAY7;                                           \
+    result = ((PINH & B00011000) << 3) | ((PINE & B00001000) << 2) | ((PING & B00100000) >> 1) |((PINE & B00110000) >> 2) | ((PINH & B01100000) >> 5); \
     RD_IDLE; }
-  #define setWriteDirInline() {                                   \
-    DDRH |=  B01111000; DDRB |=  B10110000; DDRG |=  B00100000; }
-  #define setReadDirInline()  {                                   \
-    DDRH &= ~B01111000; DDRB &= ~B10110000; DDRG &= ~B00100000; }
+
+ // // These set the PORT directions as required before the write and read
+ // // operations.
+  #define setWriteDirInline() { DDRE |=  B00111000; DDRG |=  B00100000; DDRH |= B01111000;}
+  #define setReadDirInline() { DDRE &=  ~B00111000; DDRG &=  ~B00100000; DDRH &= ~B01111000;}
 
  #else // Mega w/Breakout board
 
@@ -173,19 +175,28 @@
 
  #endif
 
-  // All of the functions are inlined on the Arduino Mega.  When using the
-  // breakout board, the macro versions aren't appreciably larger than the
-  // function equivalents, and they're super simple and fast.  When using
-  // the shield, the macros become pretty complicated...but this board has
-  // so much code space, the macros are used anyway.  If you need to free
-  // up program space, some macros can be removed, at a minor cost in speed.
-  #define write8            write8inline
-  #define read8             read8inline
-  #define setWriteDir       setWriteDirInline
-  #define setReadDir        setReadDirInline
-  #define writeRegister8    writeRegister8inline
-  #define writeRegister16   writeRegister16inline
-  #define writeRegisterPair writeRegisterPairInline
+// Data write strobe, ~2 instructions and always inline
+#define WR_STROBE { WR_ACTIVE; WR_IDLE; }
+
+// These higher-level operations are usually functionalized,
+// except on Mega where's there's gobs and gobs of program space.
+
+// Set value of TFT register: 8-bit address, 8-bit value
+#define writeRegister8inline(a, d) { \
+  CD_COMMAND; write8(a); CD_DATA; write8(d); }
+
+// Set value of TFT register: 16-bit address, 16-bit value
+// See notes at top about macro expansion, hence hi & lo temp vars
+#define writeRegister16inline(a, d) { \
+  uint8_t hi, lo; \
+  hi = (a) >> 8; lo = (a); CD_COMMAND; write8(hi); write8(lo); \
+  hi = (d) >> 8; lo = (d); CD_DATA   ; write8(hi); write8(lo); }
+
+// Set value of 2 TFT registers: Two 8-bit addresses (hi & lo), 16-bit value
+#define writeRegisterPairInline(aH, aL, d) { \
+  uint8_t hi = (d) >> 8, lo = (d); \
+  CD_COMMAND; write8(aH); CD_DATA; write8(hi); \
+  CD_COMMAND; write8(aL); CD_DATA; write8(lo); }
 
 #elif defined(__AVR_ATmega32U4__)
 
