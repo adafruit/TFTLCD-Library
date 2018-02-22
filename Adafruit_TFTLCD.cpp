@@ -872,6 +872,15 @@ uint16_t Adafruit_TFTLCD::readPixel(int16_t x, int16_t y) {
 
 // Ditto with the read/write port directions, as above.
 uint16_t Adafruit_TFTLCD::readID(void) {
+  uint16_t id;
+
+  // retry a bunch!
+  for (int i = 0; i<5; i++) {
+    id = readReg(0xD3);
+    if (id == 0x9341) {
+      return id;
+    }
+  }
 
   uint8_t hi, lo;
 
@@ -897,11 +906,6 @@ uint16_t Adafruit_TFTLCD::readID(void) {
     if (readReg(0xD0) == 0x990000) {
       return 0x8357;
     }
-  }
-
-  uint16_t id = readReg(0xD3);
-  if (id == 0x9341) {
-    return id;
   }
 
   CS_ACTIVE;
