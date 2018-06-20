@@ -42,18 +42,40 @@ Adafruit_TFTLCD::Adafruit_TFTLCD(
 #ifndef USE_ADAFRUIT_SHIELD_PINOUT
   // Convert pin numbers to registers and bitmasks
   _reset     = reset;
-  #ifdef __AVR__
-    csPort     = portOutputRegister(digitalPinToPort(cs));
-    cdPort     = portOutputRegister(digitalPinToPort(cd));
-    wrPort     = portOutputRegister(digitalPinToPort(wr));
-    rdPort     = portOutputRegister(digitalPinToPort(rd));
-  #endif
-  #if defined(__SAM3X8E__)
-    csPort     = digitalPinToPort(cs);
-    cdPort     = digitalPinToPort(cd);
-    wrPort     = digitalPinToPort(wr);
-    rdPort     = digitalPinToPort(rd);
-  #endif
+ #ifdef __AVR__
+  csPort     = portOutputRegister(digitalPinToPort(cs));
+  cdPort     = portOutputRegister(digitalPinToPort(cd));
+  wrPort     = portOutputRegister(digitalPinToPort(wr));
+  rdPort     = portOutputRegister(digitalPinToPort(rd));
+ #elif defined(__SAM3X8E__)
+  csPort     = digitalPinToPort(cs);
+  cdPort     = digitalPinToPort(cd);
+  wrPort     = digitalPinToPort(wr);
+  rdPort     = digitalPinToPort(rd);
+ #elif defined(__SAMD51__)
+  csPortSet  = &(PORT->Group[g_APinDescription[cs].ulPort].OUTSET.reg);
+  csPortClr  = &(PORT->Group[g_APinDescription[cs].ulPort].OUTCLR.reg);
+  cdPortSet  = &(PORT->Group[g_APinDescription[cd].ulPort].OUTSET.reg);
+  cdPortClr  = &(PORT->Group[g_APinDescription[cd].ulPort].OUTCLR.reg);
+  wrPortSet  = &(PORT->Group[g_APinDescription[wr].ulPort].OUTSET.reg);
+  wrPortClr  = &(PORT->Group[g_APinDescription[wr].ulPort].OUTCLR.reg);
+  rdPortSet  = &(PORT->Group[g_APinDescription[rd].ulPort].OUTSET.reg);
+  rdPortClr  = &(PORT->Group[g_APinDescription[rd].ulPort].OUTCLR.reg);
+  volatile uint32_t *r = &(PORT->Group[g_APinDescription[0].ulPort].OUT.reg);
+  writePort = (volatile uint8_t *)r + 2;
+  r = &(PORT->Group[g_APinDescription[0].ulPort].IN.reg);
+  readPort = (volatile uint8_t *)r + 2;
+  r = &(PORT->Group[g_APinDescription[0].ulPort].DIRSET.reg);
+  dirSet = (volatile uint8_t *)r + 2;
+  r = &(PORT->Group[g_APinDescription[0].ulPort].DIRCLR.reg);
+  dirClr = (volatile uint8_t *)r + 2;
+ #endif
+ #if defined(__SAMD51__)
+  csPinMask  = digitalPinToBitMask(cs);
+  cdPinMask  = digitalPinToBitMask(cd);
+  wrPinMask  = digitalPinToBitMask(wr);
+  rdPinMask  = digitalPinToBitMask(rd);
+ #else
   csPinSet   = digitalPinToBitMask(cs);
   cdPinSet   = digitalPinToBitMask(cd);
   wrPinSet   = digitalPinToBitMask(wr);
@@ -62,17 +84,22 @@ Adafruit_TFTLCD::Adafruit_TFTLCD(
   cdPinUnset = ~cdPinSet;
   wrPinUnset = ~wrPinSet;
   rdPinUnset = ~rdPinSet;
+ #endif
   #ifdef __AVR__
-    *csPort   |=  csPinSet; // Set all control bits to HIGH (idle)
-    *cdPort   |=  cdPinSet; // Signals are ACTIVE LOW
-    *wrPort   |=  wrPinSet;
-    *rdPort   |=  rdPinSet;
-  #endif
-  #if defined(__SAM3X8E__)
-    csPort->PIO_SODR  |=  csPinSet; // Set all control bits to HIGH (idle)
-    cdPort->PIO_SODR  |=  cdPinSet; // Signals are ACTIVE LOW
-    wrPort->PIO_SODR  |=  wrPinSet;
-    rdPort->PIO_SODR  |=  rdPinSet;
+    *csPort |=  csPinSet; // Set all control bits to HIGH (idle)
+    *cdPort |=  cdPinSet; // Signals are ACTIVE LOW
+    *wrPort |=  wrPinSet;
+    *rdPort |=  rdPinSet;
+  #elif defined(__SAM3X8E__)
+    csPort->PIO_SODR |= csPinSet; // Set all control bits to HIGH (idle)
+    cdPort->PIO_SODR |= cdPinSet; // Signals are ACTIVE LOW
+    wrPort->PIO_SODR |= wrPinSet;
+    rdPort->PIO_SODR |= rdPinSet;
+  #elif defined(__SAMD51__)
+    *csPortSet = csPinMask; // Set all control bits to HIGH (idle)
+    *cdPortSet = cdPinMask; // Signals are ACTIVE LOW
+    *wrPortSet = wrPinMask;
+    *rdPortSet = rdPinMask;
   #endif
   pinMode(cs, OUTPUT);    // Enable outputs
   pinMode(cd, OUTPUT);

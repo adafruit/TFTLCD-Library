@@ -70,10 +70,10 @@
 
   // LCD control lines:
   // RD (read), WR (write), CD (command/data), CS (chip select)
-  #define RD_PORT PORTC				/*pin A0 */
-  #define WR_PORT PORTC				/*pin A1 */
-  #define CD_PORT PORTC				/*pin A2 */
-  #define CS_PORT PORTC				/*pin A3 */
+  #define RD_PORT PORTC     /*pin A0 */
+  #define WR_PORT PORTC     /*pin A1 */
+  #define CD_PORT PORTC     /*pin A2 */
+  #define CS_PORT PORTC     /*pin A3 */
   #define RD_MASK B00000001
   #define WR_MASK B00000010
   #define CD_MASK B00000100
@@ -261,10 +261,10 @@
 
  #ifdef USE_ADAFRUIT_SHIELD_PINOUT
 
-  #define RD_PORT PIOA				/*pin A0 */	
-  #define WR_PORT PIOA				/*pin A1 */
-  #define CD_PORT PIOA				/*pin A2 */
-  #define CS_PORT PIOA				/*pin A3 */
+  #define RD_PORT PIOA       /*pin A0 */
+  #define WR_PORT PIOA       /*pin A1 */
+  #define CD_PORT PIOA       /*pin A2 */
+  #define CS_PORT PIOA       /*pin A3 */
   #define RD_MASK 0x00010000
   #define WR_MASK 0x01000000
   #define CD_MASK 0x00800000
@@ -294,8 +294,8 @@
    PIOB->PIO_MDDR |=  0x08000000; /*PIOB->PIO_SODR =  0x08000000;*/ PIOB->PIO_OER |=  0x08000000; PIOB->PIO_PER |=  0x08000000; }
 
   #define setReadDirInline() { \
-	  pmc_enable_periph_clk( ID_PIOD ) ;	  pmc_enable_periph_clk( ID_PIOC ) ;	  pmc_enable_periph_clk( ID_PIOB ) ; \
-   PIOD->PIO_PUDR |=  0x00000080; PIOD->PIO_IFDR |=  0x00000080; PIOD->PIO_ODR |=  0x00000080; PIOD->PIO_PER |=  0x00000080; \
+   pmc_enable_periph_clk(ID_PIOD); pmc_enable_periph_clk(ID_PIOC); pmc_enable_periph_clk(ID_PIOB) ; \
+   PI OD->PIO_PUDR |=  0x00000080; PIOD->PIO_IFDR |=  0x00000080; PIOD->PIO_ODR |=  0x00000080; PIOD->PIO_PER |=  0x00000080; \
    PIOC->PIO_PUDR |=  0x25E00000; PIOC->PIO_IFDR |=  0x25E00000; PIOC->PIO_ODR |=  0x25E00000; PIOC->PIO_PER |=  0x25E00000; \
    PIOB->PIO_PUDR |=  0x08000000; PIOB->PIO_IFDR |=  0x08000000; PIOB->PIO_ODR |=  0x08000000; PIOB->PIO_PER |=  0x08000000; }
 
@@ -311,39 +311,74 @@
    #define CS_ACTIVE  CS_PORT->PIO_CODR |= CS_MASK
    #define CS_IDLE    CS_PORT->PIO_SODR |= CS_MASK
 
-
 #else // Due w/Breakout board
 
-    #define write8inline(d) { \
-		PIO_Set(PIOC, (((d) & 0xFF)<<1)); \
-		PIO_Clear(PIOC, (((~d) & 0xFF)<<1)); \
-		WR_STROBE; }
+  #define write8inline(d) {              \
+    PIO_Set(PIOC, (((d) & 0xFF)<<1));    \
+    PIO_Clear(PIOC, (((~d) & 0xFF)<<1)); \
+    WR_STROBE; }
 
-    #define read8inline(result) { \
-		RD_ACTIVE;   \
-		delayMicroseconds(1);      \
-		result = ((PIOC->PIO_PDSR & 0x1FE) >> 1); \
-		RD_IDLE;}
+  #define read8inline(result) {               \
+    RD_ACTIVE;                                \
+    delayMicroseconds(1);                     \
+    result = ((PIOC->PIO_PDSR & 0x1FE) >> 1); \
+    RD_IDLE;}
 
-    #define setWriteDirInline() { \
-	    PIOC->PIO_MDDR |=  0x000001FE; /*PIOC->PIO_SODR |=  0x000001FE;*/ PIOC->PIO_OER |=  0x000001FE; PIOC->PIO_PER |=  0x000001FE; }
+  #define setWriteDirInline() {   \
+    PIOC->PIO_MDDR |= 0x000001FE; \
+    PIOC->PIO_OER  |= 0x000001FE; \
+    PIOC->PIO_PER  |= 0x000001FE; }
 
-    #define setReadDirInline() { \
-		pmc_enable_periph_clk( ID_PIOC ) ; \
-		PIOC->PIO_PUDR |=  0x000001FE; PIOC->PIO_IFDR |=  0x000001FE; PIOC->PIO_ODR |=  0x000001FE; PIOC->PIO_PER |=  0x000001FE; }
+  #define setReadDirInline() {         \
+    pmc_enable_periph_clk( ID_PIOC ) ; \
+    PIOC->PIO_PUDR |= 0x000001FE;      \
+    PIOC->PIO_IFDR |= 0x000001FE;      \
+    PIOC->PIO_ODR  |= 0x000001FE;      \
+    PIOC->PIO_PER  |= 0x000001FE; }
 
-    // When using the TFT breakout board, control pins are configurable.
-    #define RD_ACTIVE	rdPort->PIO_CODR |= rdPinSet		//PIO_Clear(rdPort, rdPinSet)
-    #define RD_IDLE		rdPort->PIO_SODR |= rdPinSet		//PIO_Set(rdPort, rdPinSet)	
-    #define WR_ACTIVE	wrPort->PIO_CODR |= wrPinSet		//PIO_Clear(wrPort, wrPinSet)
-    #define WR_IDLE		wrPort->PIO_SODR |= wrPinSet		//PIO_Set(wrPort, wrPinSet)
-    #define CD_COMMAND	cdPort->PIO_CODR |= cdPinSet		//PIO_Clear(cdPort, cdPinSet)
-    #define CD_DATA		cdPort->PIO_SODR |= cdPinSet		//PIO_Set(cdPort, cdPinSet)
-    #define CS_ACTIVE	csPort->PIO_CODR |= csPinSet		//PIO_Clear(csPort, csPinSet)
-    #define CS_IDLE		csPort->PIO_SODR |= csPinSet		//PIO_Set(csPort, csPinSet)
+  // When using the TFT breakout board, control pins are configurable.
+  #define RD_ACTIVE  rdPort->PIO_CODR |= rdPinSet //PIO_Clear(rdPort, rdPinSet)
+  #define RD_IDLE    rdPort->PIO_SODR |= rdPinSet //PIO_Set(rdPort, rdPinSet)
+  #define WR_ACTIVE  wrPort->PIO_CODR |= wrPinSet //PIO_Clear(wrPort, wrPinSet)
+  #define WR_IDLE    wrPort->PIO_SODR |= wrPinSet //PIO_Set(wrPort, wrPinSet)
+  #define CD_COMMAND cdPort->PIO_CODR |= cdPinSet //PIO_Clear(cdPort, cdPinSet)
+  #define CD_DATA    cdPort->PIO_SODR |= cdPinSet //PIO_Set(cdPort, cdPinSet)
+  #define CS_ACTIVE  csPort->PIO_CODR |= csPinSet //PIO_Clear(csPort, csPinSet)
+  #define CS_IDLE    csPort->PIO_SODR |= csPinSet //PIO_Set(csPort, csPinSet)
 
  #endif
 
+#elif defined(__SAMD51__) // Metro / Feather / ItsyBitsy M4
+
+ #ifdef USE_ADAFRUIT_SHIELD_PINOUT
+
+  // M4 w/shield: TBD
+
+ #else // M4 w/breakout
+
+  #define write8inline(d) { \
+    *writePort = d;         \
+    WR_STROBE; }
+
+  #define read8inline(result) { \
+    RD_ACTIVE;                  \
+    delayMicroseconds(1);       \
+    result = *readPort;         \
+    RD_IDLE; }
+
+  #define setWriteDirInline() { *dirSet = 0xFF; }
+  #define setReadDirInline()  { *dirClr = 0xFF; }
+
+  #define RD_ACTIVE  *rdPortClr = rdPinMask
+  #define RD_IDLE    *rdPortSet = rdPinMask
+  #define WR_ACTIVE  *wrPortClr = wrPinMask
+  #define WR_IDLE    *wrPortSet = wrPinMask
+  #define CD_COMMAND *cdPortClr = cdPinMask
+  #define CD_DATA    *cdPortSet = cdPinMask
+  #define CS_ACTIVE  *csPortClr = csPinMask
+  #define CS_IDLE    *csPortSet = csPinMask
+
+ #endif
 
 #else
 
@@ -351,7 +386,7 @@
 
 #endif
 
-#if !defined(__SAM3X8E__)
+#if defined(__AVR__)
 // Stuff common to all Arduino AVR board types:
 
 #ifdef USE_ADAFRUIT_SHIELD_PINOUT

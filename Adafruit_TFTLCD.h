@@ -81,18 +81,24 @@ class Adafruit_TFTLCD : public Adafruit_GFX {
 
 #ifndef USE_ADAFRUIT_SHIELD_PINOUT
 
-  #ifdef __AVR__
-    volatile uint8_t *csPort    , *cdPort    , *wrPort    , *rdPort;
-	uint8_t           csPinSet  ,  cdPinSet  ,  wrPinSet  ,  rdPinSet  ,
-					  csPinUnset,  cdPinUnset,  wrPinUnset,  rdPinUnset,
-					  _reset;
-  #endif
-  #if defined(__SAM3X8E__)
-    Pio *csPort    , *cdPort    , *wrPort    , *rdPort;
-	uint32_t          csPinSet  ,  cdPinSet  ,  wrPinSet  ,  rdPinSet  ,
-					  csPinUnset,  cdPinUnset,  wrPinUnset,  rdPinUnset,
-					  _reset;
-  #endif
+ #ifdef __AVR__
+  volatile uint8_t  *csPort    , *cdPort    , *wrPort    , *rdPort;
+  uint8_t            csPinSet  ,  cdPinSet  ,  wrPinSet  ,  rdPinSet  ,
+                     csPinUnset,  cdPinUnset,  wrPinUnset,  rdPinUnset,
+                     _reset;
+ #elif defined(__SAM3X8E__)
+  Pio               *csPort    , *cdPort    , *wrPort    , *rdPort;
+  uint32_t           csPinSet  ,  cdPinSet  ,  wrPinSet  ,  rdPinSet  ,
+                     csPinUnset,  cdPinUnset,  wrPinUnset,  rdPinUnset,
+                     _reset;
+ #elif defined(__SAMD51__)
+  volatile uint32_t *csPortSet , *cdPortSet , *wrPortSet , *rdPortSet,
+                    *csPortClr , *cdPortClr , *wrPortClr , *rdPortClr;
+  uint32_t           csPinMask ,  cdPinMask ,  wrPinMask ,  rdPinMask,
+                     _reset;
+  volatile uint8_t  *writePort, *readPort, *dirSet, *dirClr;
+
+ #endif
   
 #endif
 };
