@@ -5,10 +5,10 @@
 // MIT license
 
 #if defined(__SAM3X8E__)
-	#include <include/pio.h>
-    #define PROGMEM
-    #define pgm_read_byte(addr) (*(const unsigned char *)(addr))
-    #define pgm_read_word(addr) (*(const unsigned short *)(addr))
+  #include <include/pio.h>
+  #define PROGMEM
+  #define pgm_read_byte(addr) (*(const unsigned char *)(addr))
+  #define pgm_read_word(addr) (*(const unsigned short *)(addr))
 #endif
 #ifdef __AVR__
 	#include <avr/pgmspace.h>
@@ -28,10 +28,33 @@
 #define ID_932X    0
 #define ID_7575    1
 #define ID_9341    2
-#define ID_HX8357D    3
+#define ID_HX8357D 3
 #define ID_UNKNOWN 0xFF
 
 #include "registers.h"
+
+#ifdef __SAMD51__
+  #include <Adafruit_ZeroDMA.h>
+  #include "utility/dma.h"
+
+  #define TIMER         TC3
+  #define IRQN          TC3_IRQn
+  #define IRQ_HANDLER   TC3_Handler
+  #define TIMER_GCLK_ID TC3_GCLK_ID
+  #define TIMER_EVU     EVSYS_ID_USER_TC3_EVU
+
+  #define clockpin 4 // ItsyBitsy M4
+
+  static Adafruit_ZeroDMA myDMA;
+  static ZeroDMAstatus    stat;
+  static DmacDescriptor  *desc;
+
+  static volatile bool transfer_is_done = true;
+
+  static void dma_callback(Adafruit_ZeroDMA *dma) {
+    transfer_is_done = true;
+  }
+#endif
 
 // Constructor for breakout board (configurable LCD control lines).
 // Can still use this w/shield, but parameters are ignored.
@@ -61,6 +84,7 @@ Adafruit_TFTLCD::Adafruit_TFTLCD(
   wrPortClr  = &(PORT->Group[g_APinDescription[wr].ulPort].OUTCLR.reg);
   rdPortSet  = &(PORT->Group[g_APinDescription[rd].ulPort].OUTSET.reg);
   rdPortClr  = &(PORT->Group[g_APinDescription[rd].ulPort].OUTCLR.reg);
+  // Temporary - pin 0 determines which PORT register to use
   volatile uint32_t *r = &(PORT->Group[g_APinDescription[0].ulPort].OUT.reg);
   writePort = (volatile uint8_t *)r + 2;
   r = &(PORT->Group[g_APinDescription[0].ulPort].IN.reg);
@@ -321,7 +345,7 @@ void Adafruit_TFTLCD::begin(uint16_t id) {
     writeRegister8(ILI9341_DISPLAYON, 0);
     delay(500);
     setAddrWindow(0, 0, TFTWIDTH-1, TFTHEIGHT-1);
-    return;
+//    return;
 
   } else if (id == 0x8357) {
     // HX8357D
@@ -348,7 +372,7 @@ void Adafruit_TFTLCD::begin(uint16_t id) {
 
       }
     }
-     return;
+//     return;
      
   } else if(id == 0x7575) {
 
@@ -366,8 +390,110 @@ void Adafruit_TFTLCD::begin(uint16_t id) {
 
   } else {
     driver = ID_UNKNOWN;
-    return;
+//    return;
   }
+
+#if defined(__SAMD51__)
+  // Do insane timer/PWM/DMA init here
+  // Write-strobe pin will NEED to be on a PWM-suitable output!
+
+  // TIMER STUFF
+
+  // Set up generic clock gen 2 as source for TC4
+  // Datasheet recommends setting GENCTRL register in a single write,
+  // so a temp value is used here to more easily construct a value.
+
+  GCLK_GENCTRL_Type genctrl;
+  genctrl.bit.SRC      = GCLK_GENCTRL_SRC_DPLL0_Val; // 120 MHz source
+  genctrl.bit.GENEN    = 1; // Enable
+  genctrl.bit.OE       = 1;
+  genctrl.bit.DIVSEL   = 0; // Do not divide clock source
+  genctrl.bit.DIV      = 0;
+  GCLK->GENCTRL[2].reg = genctrl.reg;
+  while(GCLK->SYNCBUSY.bit.GENCTRL1 == 1);
+
+  GCLK->PCHCTRL[TIMER_GCLK_ID].bit.CHEN = 0;
+  while(GCLK->PCHCTRL[TIMER_GCLK_ID].bit.CHEN); // Wait for disable
+  GCLK_PCHCTRL_Type pchctrl;
+  pchctrl.bit.GEN                  = GCLK_PCHCTRL_GEN_GCLK2_Val;
+  pchctrl.bit.CHEN                 = 1;
+  GCLK->PCHCTRL[TIMER_GCLK_ID].reg = pchctrl.reg;
+  while(!GCLK->PCHCTRL[TIMER_GCLK_ID].bit.CHEN); // Wait for enable
+
+  // Set up event system off same clock
+  GCLK->PCHCTRL[EVSYS_GCLK_ID_0].bit.CHEN = 0;
+  while(GCLK->PCHCTRL[EVSYS_GCLK_ID_0].bit.CHEN); // Wait for disable
+  pchctrl.bit.GEN                  = GCLK_PCHCTRL_GEN_GCLK2_Val;
+  pchctrl.bit.CHEN                 = 1;
+  GCLK->PCHCTRL[EVSYS_GCLK_ID_0].reg = pchctrl.reg;
+  while(!GCLK->PCHCTRL[EVSYS_GCLK_ID_0].bit.CHEN); // Wait for enable
+  MCLK->APBBMASK.bit.EVSYS_ = 1; // Enable event system clock
+
+  // Configure timer for 8-bit normal PWM mode
+
+  // Counter must first be disabled to configure it
+  TIMER->COUNT8.CTRLA.bit.ENABLE = 0;
+  while(TIMER->COUNT8.SYNCBUSY.bit.STATUS);
+
+  TIMER->COUNT8.WAVE.bit.WAVEGEN = 2; // Normal PWM mode (NPWM)
+
+  TIMER->COUNT8.CTRLA.bit.MODE      = 1; // 8-bit counter mode
+  TIMER->COUNT8.CTRLA.bit.PRESCALER = 0; // 1:1 clock prescale
+  while(TIMER->COUNT8.SYNCBUSY.bit.STATUS);
+
+//TIMER->COUNT8.CTRLBSET.bit.DIR     = 1; // Count DOWN
+  TIMER->COUNT8.CTRLBCLR.bit.DIR     = 1; // Count UP
+  while(TIMER->COUNT8.SYNCBUSY.bit.CTRLB);
+  TIMER->COUNT8.CTRLBSET.bit.ONESHOT = 1; // One-shot operation
+  while(TIMER->COUNT8.SYNCBUSY.bit.CTRLB);
+
+  TIMER->COUNT8.PER.reg = 6; // PWM top value
+  while(TIMER->COUNT8.SYNCBUSY.bit.PER);
+
+  TIMER->COUNT8.CC[0].reg = 4; // Compare value for channel 0
+  while(TIMER->COUNT8.SYNCBUSY.bit.CC0);
+
+  TIMER->COUNT8.EVCTRL.bit.TCEI  = 1; // Enable async input events
+  TIMER->COUNT8.EVCTRL.bit.EVACT = 1; // Event action = start/restart/retrigger
+
+  // Enable TCx
+  TIMER->COUNT8.CTRLA.reg |= TC_CTRLA_ENABLE;
+  while(TIMER->COUNT8.SYNCBUSY.bit.STATUS);
+
+  // EVENTS STUFF
+
+  EVSYS->USER[TIMER_EVU].reg = 1; // Connect Timer EVU to ch 0 (value is +1)
+  // Datasheet recommends single write operation; reg instead of bit
+  // Also datasheet: PATH bits must be zero when using async!
+  EVSYS_CHANNEL_Type ev;
+  ev.reg      = 0;
+  ev.bit.PATH = 2;     // Asynchronous
+  ev.bit.EVGEN = 0x22; // DMA channel 0
+  EVSYS->Channel[0].CHANNEL.reg = ev.reg;
+
+  // DMA STUFF
+
+  stat = myDMA.allocate();
+  myDMA.printStatus(stat);
+
+  uint8_t foo;
+  desc = myDMA.addDescriptor(
+    (void *)&foo,       // move data from here
+    (void *)writePort,  // to here
+    256,                // this many...
+    DMA_BEAT_SIZE_BYTE, // bytes/hword/words
+    false,              // increment source addr?
+    false);             // increment dest addr?
+  desc->BTCTRL.bit.EVOSEL = 0x3; // Event strobe on beat transfer
+
+  DMAC->Channel[0].CHEVCTRL.bit.EVOE    = 1; // Enable event output
+  DMAC->Channel[0].CHEVCTRL.bit.EVOMODE = 0; // Use EVOSEL output selection
+
+  myDMA.setCallback(dma_callback);
+
+#endif
+
+
 }
 
 void Adafruit_TFTLCD::reset(void) {
@@ -509,9 +635,32 @@ void Adafruit_TFTLCD::flood(uint16_t color, uint32_t len) {
   } else {
     write8(0x22); // Write data to GRAM
   }
+  CD_DATA;
+
+#ifdef __SAMD51__
+  if(hi == lo) {
+    pinPeripheral(clockpin, PIO_TIMER);
+    desc->SRCADDR.reg       = (uint32_t)&lo;
+    desc->BTCTRL.bit.SRCINC = 0;
+    uint32_t bytesToGo = len * 2;
+    uint16_t bytesThisPass;
+    // BTCNT is a 16-bit value, so large fills may require multiple DMA xfers
+    while(bytesToGo > 0) {
+        if(bytesToGo > 65535) bytesThisPass = 65535;
+        else                  bytesThisPass = bytesToGo;
+        desc->BTCNT.reg  = bytesThisPass;
+        transfer_is_done = false;
+        stat             = myDMA.startJob();
+        myDMA.trigger();
+        while(!transfer_is_done);
+        bytesToGo -= bytesThisPass;
+    }
+    pinPeripheral(clockpin, PIO_OUTPUT);
+  } else {
+#endif
 
   // Write first pixel normally, decrement counter by 1
-  CD_DATA;
+  //CD_DATA;
   write8(hi);
   write8(lo);
   len--;
@@ -522,7 +671,7 @@ void Adafruit_TFTLCD::flood(uint16_t color, uint32_t len) {
     // on the port(s) and just toggle the write strobe.
     while(blocks--) {
       i = 16; // 64 pixels/block / 4 pixels/pass
-      do {
+      do  {
         WR_STROBE; WR_STROBE; WR_STROBE; WR_STROBE; // 2 bytes/pixel
         WR_STROBE; WR_STROBE; WR_STROBE; WR_STROBE; // x 4 pixels
       } while(--i);
@@ -545,6 +694,11 @@ void Adafruit_TFTLCD::flood(uint16_t color, uint32_t len) {
       write8(lo);
     }
   }
+
+#ifdef __SAMD51__
+  }
+#endif
+
   CS_IDLE;
 }
 
@@ -654,7 +808,6 @@ void Adafruit_TFTLCD::fillScreen(uint16_t color) {
     // this display takes rotation into account for the parameters, no
     // need to do extra rotation math here.
     setAddrWindow(0, 0, _width - 1, _height - 1);
-
   }
   flood(color, (long)TFTWIDTH * (long)TFTHEIGHT);
 }
@@ -733,6 +886,27 @@ void Adafruit_TFTLCD::pushColors(uint16_t *data, uint8_t len, boolean first) {
      }
   }
   CD_DATA;
+#ifdef __SAMD51__
+  pinPeripheral(clockpin, PIO_TIMER);
+  desc->BTCTRL.bit.SRCINC = 1;
+  uint32_t dataIdx = (uint32_t)data; // -> 1st byte of data
+  uint32_t bytesToGo = len * 2;
+  uint16_t bytesThisPass;
+  // BTCNT is a 16-bit value, so large fills may require multiple DMA xfers
+  while(bytesToGo > 0) {
+    if(bytesToGo > 65535) bytesThisPass = 65535;
+    else                  bytesThisPass = bytesToGo;
+    desc->SRCADDR.reg = dataIdx + bytesThisPass;
+    desc->BTCNT.reg   = bytesThisPass;
+    transfer_is_done  = false;
+    stat              = myDMA.startJob();
+    myDMA.trigger();
+    while(!transfer_is_done);
+    bytesToGo        -= bytesThisPass;
+    dataIdx          += bytesThisPass;
+  }
+  pinPeripheral(clockpin, PIO_OUTPUT);
+#else
   while(len--) {
     color = *data++;
     hi    = color >> 8; // Don't simplify or merge these
@@ -740,6 +914,7 @@ void Adafruit_TFTLCD::pushColors(uint16_t *data, uint8_t len, boolean first) {
     write8(hi);         // going on.
     write8(lo);
   }
+#endif
   CS_IDLE;
 }
 

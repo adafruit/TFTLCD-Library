@@ -4,13 +4,16 @@
 
 #include <Adafruit_GFX.h>    // Core graphics library
 #include <Adafruit_TFTLCD.h> // Hardware-specific library
+#include <Adafruit_ZeroDMA.h>
+  #include "utility/dma.h"
 
 // The control pins for the LCD can be assigned to any digital or
 // analog pins...but we'll use the analog pins as this allows us to
 // double up the pins with the touch screen (see the TFT paint example).
 #define LCD_CS A3 // Chip Select goes to Analog 3
 #define LCD_CD A2 // Command/Data goes to Analog 2
-#define LCD_WR A1 // LCD Write goes to Analog 1
+// Changed this to pin for so timer/counter can be used
+#define LCD_WR  4 // LCD Write goes to Analog 1
 #define LCD_RD A0 // LCD Read goes to Analog 0
 
 #define LCD_RESET A4 // Can alternately just connect to Arduino's reset pin
@@ -46,7 +49,8 @@ Adafruit_TFTLCD tft(LCD_CS, LCD_CD, LCD_WR, LCD_RD, LCD_RESET);
 void setup(void) {
   Serial.begin(9600);
   Serial.println(F("TFT LCD test"));
-
+pinMode(5, OUTPUT);
+digitalWrite(5, LOW);
 #ifdef USE_ADAFRUIT_SHIELD_PINOUT
   Serial.println(F("Using Adafruit 2.8\" TFT Arduino Shield Pinout"));
 #else
@@ -58,7 +62,7 @@ void setup(void) {
   tft.reset();
 
   uint16_t identifier = tft.readID();
-
+//identifier = 0x9341;
   if(identifier == 0x9325) {
     Serial.println(F("Found ILI9325 LCD driver"));
   } else if(identifier == 0x9328) {
@@ -78,10 +82,18 @@ void setup(void) {
     Serial.println(F("If using the breakout board, it should NOT be #defined!"));
     Serial.println(F("Also if using the breakout, double-check that all wiring"));
     Serial.println(F("matches the tutorial."));
-    return;
   }
 
   tft.begin(identifier);
+
+/*
+for(;;) {
+  tft.fillScreen(0x0000);
+//  delay(500);
+  tft.fillScreen(0xFFFF);
+//  delay(500);
+}
+*/
 
   Serial.println(F("Benchmark                Time (microseconds)"));
 
