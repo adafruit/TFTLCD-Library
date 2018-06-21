@@ -1,52 +1,65 @@
-// BMP-loading example specifically for the TFTLCD breakout board.
-// If using the Arduino shield, use the tftbmp_shield.pde sketch instead!
-// If using an Arduino Mega make sure to use its hardware SPI pins, OR make
-// sure the SD library is configured for 'soft' SPI in the file Sd2Card.h.
+// BMP-loading demo rigged specifically for the SAMD21 branch
+// of TFTLCD and the ItsyBitsy M4 board.  TFTLCD lib MUST be
+// configured for the breakout board option, plus there's
+// some wiring shenanigans...
 
+// LCD_WR MUST go to pin D4, because we're using a specific
+// timer/counter for PWM output.  The pin # could be changed
+// IF a corresponding timer change is made in the SAMD21 TFTLIB.
+
+// One of two additional wiring changes MUST be made.  Either:
+// LCD_WR MUST go through an inverter (e.g. 74HC04)
+//  -or-
+// The TFT 'CS' pin MUST be tied HIGH (ignoring LCD_CS setting)
+// If you opt for this latter arrangement, you CANNOT read the
+// device ID from the display (or anything else) -- see setup()
+// where 'identifier' is hardcoded;
+
+// Data pins are as follows:
+//   D0 connects to digital pin 0  (Notice these are
+//   D1 connects to digital pin 1   NOT in order!)
+//   D2 connects to digital pin 7
+//   D3 connects to digital pin 9
+//   D4 connects to digital pin 10
+//   D5 connects to digital pin 11
+//   D6 connects to digital pin 13
+//   D7 connects to digital pin 12
+
+#include <SD.h>
 #include <Adafruit_GFX.h>    // Core graphics library
 #include <Adafruit_TFTLCD.h> // Hardware-specific library
-#include <SD.h>
-#include <SPI.h>
 
-// The control pins for the LCD can be assigned to any digital or
-// analog pins...but we'll use the analog pins as this allows us to
-// double up the pins with the touch screen (see the TFT paint example).
-#define LCD_CS A3 // Chip Select goes to Analog 3
-#define LCD_CD A2 // Command/Data goes to Analog 2
-#define LCD_WR A1 // LCD Write goes to Analog 1
-#define LCD_RD A0 // LCD Read goes to Analog 0
+#define LCD_CS A3 // Chip Select (see notes above)
+#define LCD_CD A2 // Command/Data
+#define LCD_RD A0 // LCD Read strobe
+#define LCD_WR  4 // LCD Write strobe (see notes above)
 
-// When using the BREAKOUT BOARD only, use these 8 data lines to the LCD:
-// For the Arduino Uno, Duemilanove, Diecimila, etc.:
-//   D0 connects to digital pin 8  (Notice these are
-//   D1 connects to digital pin 9   NOT in order!)
-//   D2 connects to digital pin 2
-//   D3 connects to digital pin 3
-//   D4 connects to digital pin 4
-//   D5 connects to digital pin 5
-//   D6 connects to digital pin 6
-//   D7 connects to digital pin 7
-// For the Arduino Mega, use digital pins 22 through 29
-// (on the 2-row header at the end of the board).
+#define LCD_RESET A4 // Alternately just connect to Arduino's reset pin
 
-// For Arduino Uno/Duemilanove, etc
-//  connect the SD card with DI going to pin 11, DO going to pin 12 and SCK going to pin 13 (standard)
-//  Then pin 10 goes to CS (or whatever you have set up)
-#define SD_CS 10     // Set the chip select line to whatever you use (10 doesnt conflict with the library)
+// DO NOT use the SD card slot on the TFT breakout -- it doesn't
+// appear to work when using the parallel interface.  Instead, a
+// separate SD breakout is needed.
+
+#define SD_CS A5 // SD card delect
 
 // In the SD card, place 24 bit color BMP files (be sure they are 24-bit!)
 // There are examples in the sketch folder
 
 // our TFT wiring
-Adafruit_TFTLCD tft(LCD_CS, LCD_CD, LCD_WR, LCD_RD, A4);
+Adafruit_TFTLCD tft(LCD_CS, LCD_CD, LCD_WR, LCD_RD, LCD_RESET);
 
 void setup()
 {
   Serial.begin(9600);
+  while(!Serial);
 
   tft.reset();
 
   uint16_t identifier = tft.readID();
+
+  // SEE NOTES ABOVE - this is necessary IF using the
+  // hard-wired CS (and no inverter) option.
+  identifier = 0x9341;
 
   if(identifier == 0x9325) {
     Serial.println(F("Found ILI9325 LCD driver"));
@@ -71,13 +84,17 @@ void setup()
   }
 
   tft.begin(identifier);
+  tft.fillScreen(0);
 
   Serial.print(F("Initializing SD card..."));
   if (!SD.begin(SD_CS)) {
     Serial.println(F("failed!"));
-    return;
+    tft.fillScreen(0xF800);
+    for(;;);
   }
+
   Serial.println(F("OK!"));
+  tft.fillScreen(0x001F);
 
   bmpDraw("woof.bmp", 0, 0);
   delay(1000);
@@ -91,7 +108,7 @@ void loop()
     for(int j=0; j <= 200; j += 50) {
       bmpDraw("miniwoof.bmp", j, j);
     }
-    delay(1000);
+//    delay(1000);
   }
 }
 
@@ -106,7 +123,6 @@ void loop()
 #define BUFFPIXEL 20
 
 void bmpDraw(char *filename, int x, int y) {
-
   File     bmpFile;
   int      bmpWidth, bmpHeight;   // W+H in pixels
   uint8_t  bmpDepth;              // Bit depth (currently must be 24)
@@ -122,6 +138,7 @@ void bmpDraw(char *filename, int x, int y) {
   uint32_t pos = 0, startTime = millis();
   uint8_t  lcdidx = 0;
   boolean  first = true;
+  uint16_t col16;
 
   if((x >= tft.width()) || (y >= tft.height())) return;
 
@@ -208,7 +225,8 @@ void bmpDraw(char *filename, int x, int y) {
             b = sdbuffer[buffidx++];
             g = sdbuffer[buffidx++];
             r = sdbuffer[buffidx++];
-            lcdbuffer[lcdidx++] = tft.color565(r,g,b);
+            col16 = tft.color565(r,g,b);
+            lcdbuffer[lcdidx++] = (col16 * 0x00010001) >> 8; // Flip hi/lo bytes
           } // end pixel
         } // end scanline
         // Write any remaining data to LCD
@@ -221,6 +239,7 @@ void bmpDraw(char *filename, int x, int y) {
       } // end goodBmp
     }
   }
+  tft.setAddrWindow(0, 0, tft.width() - 1, tft.height() - 1);
 
   bmpFile.close();
   if(!goodBmp) Serial.println(F("BMP format not recognized."));

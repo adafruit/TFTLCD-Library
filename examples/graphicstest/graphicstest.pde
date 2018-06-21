@@ -1,35 +1,39 @@
-// IMPORTANT: Adafruit_TFTLCD LIBRARY MUST BE SPECIFICALLY
-// CONFIGURED FOR EITHER THE TFT SHIELD OR THE BREAKOUT BOARD.
-// SEE RELEVANT COMMENTS IN Adafruit_TFTLCD.h FOR SETUP.
+// Graphics test rigged specifically for the SAMD21 branch
+// of TFTLCD and the ItsyBitsy M4 board.  TFTLCD lib MUST be
+// configured for the breakout board option, plus there's
+// some wiring shenanigans...
+
+// LCD_WR MUST go to pin D4, because we're using a specific
+// timer/counter for PWM output.  The pin # could be changed
+// IF a corresponding timer change is made in the SAMD21 TFTLIB.
+
+// One of two additional wiring changes MUST be made.  Either:
+// LCD_WR MUST go through an inverter (e.g. 74HC04)
+//  -or-
+// The TFT 'CS' pin MUST be tied HIGH (ignoring LCD_CS setting)
+// If you opt for this latter arrangement, you CANNOT read the
+// device ID from the display (or anything else) -- see setup()
+// where 'identifier' is hardcoded;
+
+// Data pins are as follows:
+//   D0 connects to digital pin 0  (Notice these are
+//   D1 connects to digital pin 1   NOT in order!)
+//   D2 connects to digital pin 7
+//   D3 connects to digital pin 9
+//   D4 connects to digital pin 10
+//   D5 connects to digital pin 11
+//   D6 connects to digital pin 13
+//   D7 connects to digital pin 12
 
 #include <Adafruit_GFX.h>    // Core graphics library
 #include <Adafruit_TFTLCD.h> // Hardware-specific library
-#include <Adafruit_ZeroDMA.h>
-  #include "utility/dma.h"
 
-// The control pins for the LCD can be assigned to any digital or
-// analog pins...but we'll use the analog pins as this allows us to
-// double up the pins with the touch screen (see the TFT paint example).
-#define LCD_CS A3 // Chip Select goes to Analog 3
-#define LCD_CD A2 // Command/Data goes to Analog 2
-// Changed this to pin for so timer/counter can be used
-#define LCD_WR  4 // LCD Write goes to Analog 1
-#define LCD_RD A0 // LCD Read goes to Analog 0
+#define LCD_CS A3 // Chip Select (see notes above)
+#define LCD_CD A2 // Command/Data
+#define LCD_RD A0 // LCD Read strobe
+#define LCD_WR  4 // LCD Write strobe (see notes above)
 
-#define LCD_RESET A4 // Can alternately just connect to Arduino's reset pin
-
-// When using the BREAKOUT BOARD only, use these 8 data lines to the LCD:
-// For the Arduino Uno, Duemilanove, Diecimila, etc.:
-//   D0 connects to digital pin 8  (Notice these are
-//   D1 connects to digital pin 9   NOT in order!)
-//   D2 connects to digital pin 2
-//   D3 connects to digital pin 3
-//   D4 connects to digital pin 4
-//   D5 connects to digital pin 5
-//   D6 connects to digital pin 6
-//   D7 connects to digital pin 7
-// For the Arduino Mega, use digital pins 22 through 29
-// (on the 2-row header at the end of the board).
+#define LCD_RESET A4 // Alternately just connect to Arduino's reset pin
 
 // Assign human-readable names to some common 16-bit color values:
 #define	BLACK   0x0000
@@ -42,15 +46,10 @@
 #define WHITE   0xFFFF
 
 Adafruit_TFTLCD tft(LCD_CS, LCD_CD, LCD_WR, LCD_RD, LCD_RESET);
-// If using the shield, all control and data lines are fixed, and
-// a simpler declaration can optionally be used:
-// Adafruit_TFTLCD tft;
 
 void setup(void) {
   Serial.begin(9600);
   Serial.println(F("TFT LCD test"));
-pinMode(5, OUTPUT);
-digitalWrite(5, LOW);
 #ifdef USE_ADAFRUIT_SHIELD_PINOUT
   Serial.println(F("Using Adafruit 2.8\" TFT Arduino Shield Pinout"));
 #else
@@ -62,7 +61,11 @@ digitalWrite(5, LOW);
   tft.reset();
 
   uint16_t identifier = tft.readID();
-//identifier = 0x9341;
+
+  // SEE NOTES ABOVE - this is necessary IF using the
+  // hard-wired CS (and no inverter) option.
+  identifier = 0x9341;
+
   if(identifier == 0x9325) {
     Serial.println(F("Found ILI9325 LCD driver"));
   } else if(identifier == 0x9328) {
@@ -86,14 +89,25 @@ digitalWrite(5, LOW);
 
   tft.begin(identifier);
 
-/*
+#if 0
+// Test frame rate:
+uint32_t startTime = millis();
+uint32_t frames = 0;
 for(;;) {
   tft.fillScreen(0x0000);
+  frames++;
 //  delay(500);
   tft.fillScreen(0xFFFF);
+  frames++;
 //  delay(500);
+  if(!(frames & 0xFF)) {
+    uint32_t elapsed = (millis() - startTime) / 1000;
+    if(elapsed > 0) {
+      Serial.println(frames / elapsed);
+    }
+  }
 }
-*/
+#endif
 
   Serial.println(F("Benchmark                Time (microseconds)"));
 

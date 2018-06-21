@@ -371,8 +371,12 @@
 
   #define RD_ACTIVE  *rdPortClr = rdPinMask
   #define RD_IDLE    *rdPortSet = rdPinMask
+/*
   #define WR_ACTIVE  *wrPortClr = wrPinMask
   #define WR_IDLE    *wrPortSet = wrPinMask
+*/
+  #define WR_ACTIVE  *wrPortSet = wrPinMask
+  #define WR_IDLE    *wrPortClr = wrPinMask
   #define CD_COMMAND *cdPortClr = cdPinMask
   #define CD_DATA    *cdPortSet = cdPinMask
   #define CS_ACTIVE  *csPortClr = csPinMask

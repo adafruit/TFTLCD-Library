@@ -33,7 +33,7 @@
 
 #include "registers.h"
 
-#ifdef __SAMD51__
+#if defined(__SAMD51__)
   #include <Adafruit_ZeroDMA.h>
   #include "utility/dma.h"
 
@@ -123,12 +123,13 @@ Adafruit_TFTLCD::Adafruit_TFTLCD(
     *csPortSet = csPinMask; // Set all control bits to HIGH (idle)
     *cdPortSet = cdPinMask; // Signals are ACTIVE LOW
     *wrPortSet = wrPinMask;
+//    *wrPortClr = wrPinMask;
     *rdPortSet = rdPinMask;
   #endif
   pinMode(cs, OUTPUT);    // Enable outputs
-  pinMode(cd, OUTPUT);
   pinMode(wr, OUTPUT);
   pinMode(rd, OUTPUT);
+  pinMode(cd, OUTPUT);
   if(reset) {
     digitalWrite(reset, HIGH);
     pinMode(reset, OUTPUT);
@@ -447,14 +448,16 @@ void Adafruit_TFTLCD::begin(uint16_t id) {
   TIMER->COUNT8.CTRLBSET.bit.ONESHOT = 1; // One-shot operation
   while(TIMER->COUNT8.SYNCBUSY.bit.CTRLB);
 
-  TIMER->COUNT8.PER.reg = 6; // PWM top value
+  TIMER->COUNT8.PER.reg = 3; // PWM top value
   while(TIMER->COUNT8.SYNCBUSY.bit.PER);
 
-  TIMER->COUNT8.CC[0].reg = 4; // Compare value for channel 0
+  TIMER->COUNT8.CC[0].reg = 2; // Compare value for channel 0
   while(TIMER->COUNT8.SYNCBUSY.bit.CC0);
 
   TIMER->COUNT8.EVCTRL.bit.TCEI  = 1; // Enable async input events
   TIMER->COUNT8.EVCTRL.bit.EVACT = 1; // Event action = start/restart/retrigger
+
+//TIMER->COUNT8.DRVCTRL.bit.INVEN0 = 1; // Invert output
 
   // Enable TCx
   TIMER->COUNT8.CTRLA.reg |= TC_CTRLA_ENABLE;
@@ -637,7 +640,7 @@ void Adafruit_TFTLCD::flood(uint16_t color, uint32_t len) {
   }
   CD_DATA;
 
-#ifdef __SAMD51__
+#if defined(__SAMD51__)
   if(hi == lo) {
     pinPeripheral(clockpin, PIO_TIMER);
     desc->SRCADDR.reg       = (uint32_t)&lo;
@@ -695,7 +698,7 @@ void Adafruit_TFTLCD::flood(uint16_t color, uint32_t len) {
     }
   }
 
-#ifdef __SAMD51__
+#if defined(__SAMD51__)
   }
 #endif
 
@@ -878,32 +881,41 @@ void Adafruit_TFTLCD::pushColors(uint16_t *data, uint8_t len, boolean first) {
   CS_ACTIVE;
   if(first == true) { // Issue GRAM write command only on first call
     CD_COMMAND;
-    if(driver == ID_932X) write8(0x00);
-    if ((driver == ID_9341) || (driver == ID_HX8357D)){
-       write8(0x2C);
-     }  else {
-       write8(0x22);
-     }
+    if (driver == ID_9341) {
+      write8(0x2C);
+    } else if (driver == ID_932X) {
+      write8(0x00); // High byte of GRAM register...
+      write8(0x22); // Write data to GRAM
+    } else if (driver == ID_HX8357D) {
+      write8(HX8357_RAMWR);
+    } else {
+      write8(0x22); // Write data to GRAM
+    }
   }
+// Problem is most likely here -- that when we switch to DATA mode,
+// the fact that the write line is LOW will trigger a write operation.
+// Or when we chip-select. One or the other, but same idea.
   CD_DATA;
-#ifdef __SAMD51__
+// Idea: invert clock signal using hardware (e.g. 7404)
+
+#if defined(__SAMD51__)
   pinPeripheral(clockpin, PIO_TIMER);
   desc->BTCTRL.bit.SRCINC = 1;
-  uint32_t dataIdx = (uint32_t)data; // -> 1st byte of data
+  uint8_t *dataPtr = (uint8_t *)data; // -> 1st byte of data
   uint32_t bytesToGo = len * 2;
   uint16_t bytesThisPass;
   // BTCNT is a 16-bit value, so large fills may require multiple DMA xfers
   while(bytesToGo > 0) {
     if(bytesToGo > 65535) bytesThisPass = 65535;
     else                  bytesThisPass = bytesToGo;
-    desc->SRCADDR.reg = dataIdx + bytesThisPass;
+    desc->SRCADDR.reg = (uint32_t)dataPtr + bytesThisPass;
     desc->BTCNT.reg   = bytesThisPass;
     transfer_is_done  = false;
     stat              = myDMA.startJob();
     myDMA.trigger();
     while(!transfer_is_done);
     bytesToGo        -= bytesThisPass;
-    dataIdx          += bytesThisPass;
+    dataPtr          += bytesThisPass;
   }
   pinPeripheral(clockpin, PIO_OUTPUT);
 #else
