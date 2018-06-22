@@ -42,6 +42,14 @@
 
 #define SD_CS A5 // SD card delect
 
+// A switch or jumper on A1 selects DMA vs non-DMA BMP loading.
+// There's really not a huge performance difference in this case
+// just because the bottleneck is in the SD card access and color
+// conversion operations...BUT...it does demonstrate how the
+// pushColorsDMA() function works, and how to use a callback to
+// load the next block of data while the current block is sent.
+#define DMA_SELECT A1 // Hi/lo chooses DMA vs non-DMA DMA loader
+
 // In the SD card, place 24 bit color BMP files (be sure they are 24-bit!)
 // There are examples in the sketch folder
 
@@ -52,6 +60,8 @@ void setup()
 {
   Serial.begin(9600);
   while(!Serial);
+
+  pinMode(DMA_SELECT, INPUT_PULLUP);
 
   tft.reset();
 
@@ -96,8 +106,11 @@ void setup()
   Serial.println(F("OK!"));
   tft.fillScreen(0x001F);
 
-  bmpDraw("woof.bmp", 0, 0);
-  delay(1000);
+  if(digitalRead(DMA_SELECT))
+    bmpDrawDMA("woof.bmp", 0, 0);
+  else
+    bmpDraw("woof.bmp", 0, 0);
+//  delay(1000);
 }
 
 void loop()
@@ -106,11 +119,38 @@ void loop()
     tft.setRotation(i);
     tft.fillScreen(0);
     for(int j=0; j <= 200; j += 50) {
-      bmpDraw("miniwoof.bmp", j, j);
+      if(digitalRead(DMA_SELECT))
+        bmpDrawDMA("miniwoof.bmp", j, j);
+      else
+        bmpDraw("miniwoof.bmp", j, j);
     }
 //    delay(1000);
   }
 }
+
+// Common functions/vars for both BMP loaders ------------------------------
+
+// These read 16- and 32-bit types from the SD card file.
+// BMP data is stored little-endian, Arduino is little-endian too.
+// May need to reverse subscript order if porting elsewhere.
+
+uint16_t read16(File f) {
+  uint16_t result;
+  ((uint8_t *)&result)[0] = f.read(); // LSB
+  ((uint8_t *)&result)[1] = f.read(); // MSB
+  return result;
+}
+
+uint32_t read32(File f) {
+  uint32_t result;
+  ((uint8_t *)&result)[0] = f.read(); // LSB
+  ((uint8_t *)&result)[1] = f.read();
+  ((uint8_t *)&result)[2] = f.read();
+  ((uint8_t *)&result)[3] = f.read(); // MSB
+  return result;
+}
+
+// "Vanilla" (non-DMA) BMP Loader ------------------------------------------
 
 // This function opens a Windows Bitmap (BMP) file and
 // displays it at the given coordinates.  It's sped up
@@ -120,7 +160,7 @@ void loop()
 // makes loading a little faster.  20 pixels seems a
 // good balance.
 
-#define BUFFPIXEL 20
+#define BUFFPIXEL 64
 
 void bmpDraw(char *filename, int x, int y) {
   File     bmpFile;
@@ -245,23 +285,135 @@ void bmpDraw(char *filename, int x, int y) {
   if(!goodBmp) Serial.println(F("BMP format not recognized."));
 }
 
-// These read 16- and 32-bit types from the SD card file.
-// BMP data is stored little-endian, Arduino is little-endian too.
-// May need to reverse subscript order if porting elsewhere.
+// DMA BMP Loader ----------------------------------------------------------
 
-uint16_t read16(File f) {
-  uint16_t result;
-  ((uint8_t *)&result)[0] = f.read(); // LSB
-  ((uint8_t *)&result)[1] = f.read(); // MSB
-  return result;
+// DMA buffer: 320 pixels max width, DMALINES height, 2 bytes/pixel, 2 bufs
+// SD buffer: 320 pixels max width, one scanline
+#define DMALINES 16
+uint8_t dmabuf[DMALINES * 320 * 2 * 2];
+uint8_t sdbuf[320 * 3];
+
+File     bmpFile;
+uint32_t bmpImageoffset;        // Start of image data in file
+int      lineNum, linesToGo;    // Current, remaining lines to load
+boolean  flip;                  // BMP is stored bottom-to-top
+int      bmpHeight;             // Uncropped height in pixels
+int      croppedWidth;          // Cropped width in pixels
+uint32_t rowSize;               // Not always bmpWidth; may have padding
+
+void bmpCallback(uint8_t *dest, uint16_t len) {
+  int      row, col, linesThisPass;
+  uint8_t  r, g, b, *ptr;
+  uint16_t col16;
+  uint32_t pos;
+
+  linesThisPass = (linesToGo > DMALINES) ? DMALINES : linesToGo;
+
+  for(row=0; row<linesThisPass; row++, lineNum++) { // For each scanline...
+    // Seek to start of scan line.  It might seem labor-
+    // intensive to be doing this on every line, but this
+    // method covers a lot of gritty details like cropping
+    // and scanline padding.  Also, the seek only takes
+    // place if the file position actually needs to change
+    // (avoids a lot of cluster math in SD library).
+    if(flip) // Bitmap is stored bottom-to-top order (normal BMP)
+      pos = bmpImageoffset + (bmpHeight - 1 - lineNum) * rowSize;
+    else     // Bitmap is stored top-to-bottom
+      pos = bmpImageoffset + lineNum * rowSize;
+    if(bmpFile.position() != pos) { // Need seek?
+      bmpFile.seek(pos);
+    }
+
+    bmpFile.read(sdbuf, croppedWidth * 3); // Read scanline
+    ptr = sdbuf;
+    for(col=0; col<croppedWidth; col++) { // For each column...
+      // Convert pixel from BMP to TFT format
+      b = *ptr++;
+      g = *ptr++;
+      r = *ptr++;
+      col16 = tft.color565(r,g,b);
+      *dest++ = col16 >> 8; // High byte
+      *dest++ = col16;      // Low byte
+    } // end pixel
+  } // end scanline
+
+  linesToGo -= linesThisPass;
 }
 
-uint32_t read32(File f) {
-  uint32_t result;
-  ((uint8_t *)&result)[0] = f.read(); // LSB
-  ((uint8_t *)&result)[1] = f.read();
-  ((uint8_t *)&result)[2] = f.read();
-  ((uint8_t *)&result)[3] = f.read(); // MSB
-  return result;
+void bmpDrawDMA(char *filename, int x, int y) {
+  int      bmpWidth;              // Image width in pixels
+  uint8_t  bmpDepth;              // Bit depth (currently must be 24)
+  boolean  goodBmp = false;       // Set to true on valid header parse
+  int      w, h;
+  uint32_t startTime = millis();
+
+  if((x >= tft.width()) || (y >= tft.height())) return;
+
+  Serial.println();
+  Serial.print(F("Loading image '"));
+  Serial.print(filename);
+  Serial.println('\'');
+  // Open requested file on SD card
+  if ((bmpFile = SD.open(filename)) == NULL) {
+    Serial.println(F("File not found"));
+    return;
+  }
+
+  // Parse BMP header
+  if(read16(bmpFile) == 0x4D42) { // BMP signature
+    Serial.println(F("File size: ")); Serial.println(read32(bmpFile));
+    (void)read32(bmpFile); // Read & ignore creator bytes
+    bmpImageoffset = read32(bmpFile); // Start of image data
+    Serial.print(F("Image Offset: ")); Serial.println(bmpImageoffset, DEC);
+    // Read DIB header
+    Serial.print(F("Header size: ")); Serial.println(read32(bmpFile));
+    bmpWidth  = read32(bmpFile);
+    bmpHeight = read32(bmpFile);
+    if(read16(bmpFile) == 1) { // # planes -- must be '1'
+      bmpDepth = read16(bmpFile); // bits per pixel
+      Serial.print(F("Bit Depth: ")); Serial.println(bmpDepth);
+      if((bmpDepth == 24) && (read32(bmpFile) == 0)) { // 0 = uncompressed
+
+        goodBmp = true; // Supported BMP format -- proceed!
+        Serial.print(F("Image size: "));
+        Serial.print(bmpWidth);
+        Serial.print('x');
+        Serial.println(bmpHeight);
+
+        // BMP rows are padded (if needed) to 4-byte boundary
+        rowSize = (bmpWidth * 3 + 3) & ~3;
+
+        // If bmpHeight is negative, image is in top-down order.
+        // This is not canon but has been observed in the wild.
+        if(bmpHeight < 0) {
+          bmpHeight = -bmpHeight;
+          flip      = false;
+        } else {
+          flip      = true;
+        }
+
+        // Crop area to be loaded
+        w = bmpWidth;
+        h = bmpHeight;
+        if((x+w-1) >= tft.width())  w = tft.width()  - x;
+        if((y+h-1) >= tft.height()) h = tft.height() - y;
+
+        // Set TFT address window to clipped image bounds
+        tft.setAddrWindow(x, y, x+w-1, y+h-1);
+        croppedWidth = w;
+        lineNum      = 0;
+        linesToGo    = h;
+        tft.pushColorsDMA(w * h * 2, dmabuf, w * DMALINES * 2, bmpCallback);
+
+        Serial.print(F("Loaded in "));
+        Serial.print(millis() - startTime);
+        Serial.println(" ms");
+      } // end goodBmp
+    }
+  }
+  tft.setAddrWindow(0, 0, tft.width() - 1, tft.height() - 1);
+
+  bmpFile.close();
+  if(!goodBmp) Serial.println(F("BMP format not recognized."));
 }
 

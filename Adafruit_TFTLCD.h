@@ -39,6 +39,9 @@ class Adafruit_TFTLCD : public Adafruit_GFX {
        // These methods are public in order for BMP examples to work:
   void     setAddrWindow(int x1, int y1, int x2, int y2);
   void     pushColors(uint16_t *data, uint8_t len, boolean first);
+  void     pushColorsDMA(uint32_t totalBytes, uint8_t *buffer,
+             uint16_t bufSize, void (*callback)(uint8_t *dest, uint16_t len));
+
 
   uint16_t color565(uint8_t r, uint8_t g, uint8_t b),
            readPixel(int16_t x, int16_t y),

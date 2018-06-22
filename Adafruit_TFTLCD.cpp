@@ -892,11 +892,7 @@ void Adafruit_TFTLCD::pushColors(uint16_t *data, uint8_t len, boolean first) {
       write8(0x22); // Write data to GRAM
     }
   }
-// Problem is most likely here -- that when we switch to DATA mode,
-// the fact that the write line is LOW will trigger a write operation.
-// Or when we chip-select. One or the other, but same idea.
   CD_DATA;
-// Idea: invert clock signal using hardware (e.g. 7404)
 
 #if defined(__SAMD51__)
   pinPeripheral(clockpin, PIO_TIMER);
@@ -927,6 +923,65 @@ void Adafruit_TFTLCD::pushColors(uint16_t *data, uint8_t len, boolean first) {
     write8(lo);
   }
 #endif
+  CS_IDLE;
+}
+
+void Adafruit_TFTLCD::pushColorsDMA(
+  uint32_t bytesToGo,
+  uint8_t  *buffer,
+  uint16_t bufSize,
+  void     (*callback)(uint8_t *dest, uint16_t len)) {
+  CS_ACTIVE;
+  CD_COMMAND;
+  if(driver == ID_9341) {
+    write8(0x2C);
+  } else if(driver == ID_932X) {
+    write8(0x00); // High byte of GRAM register...
+    write8(0x22); // Write data to GRAM
+  } else if (driver == ID_HX8357D) {
+    write8(HX8357_RAMWR);
+  } else {
+    write8(0x22); // Write data to GRAM
+  }
+  CD_DATA;
+
+  // Buffer passed in should be 2X bufSize bytes...
+  uint8_t *buf[2];
+  buf[0] = buffer;           // First half of buffer
+  buf[1] = buf[0] + bufSize; // Second half
+  uint8_t idx = 2;           // Active buffer 0/1 (2 = first pass; no xfer)
+
+  pinPeripheral(clockpin, PIO_TIMER);
+  desc->BTCTRL.bit.SRCINC = 1;
+
+  uint16_t bytesThisPass;
+  while(bytesToGo > 0) {
+    if(idx < 2) {
+      // Wait for prior transfer to finish
+      while(!transfer_is_done);
+      // Send from buf[idx]
+      desc->SRCADDR.reg = (uint32_t)buf[idx] + bytesThisPass;
+      desc->BTCNT.reg   = bytesThisPass;
+      transfer_is_done  = false;
+      stat              = myDMA.startJob();
+      myDMA.trigger();
+      bytesToGo -= bytesThisPass; // Data sent
+      idx = 1 - idx; // Toggle idx so data is loaded into alt buffer
+    } else {
+      // First pass, no xfer, just load...
+      idx = 0;
+    }
+    // Load next data (if needed)
+    if(bytesToGo) {
+      if(bytesToGo > bufSize) bytesThisPass = bufSize;
+      else                    bytesThisPass = bytesToGo;
+      (*callback)(buf[idx], bytesThisPass);
+    }
+  }
+  // Wait for last transfer to finish
+  while(!transfer_is_done);
+  pinPeripheral(clockpin, PIO_OUTPUT);
+
   CS_IDLE;
 }
 
