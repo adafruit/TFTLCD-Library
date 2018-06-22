@@ -37,11 +37,33 @@
   #include <Adafruit_ZeroDMA.h>
   #include "utility/dma.h"
 
-  #define TIMER         TC3
-  #define IRQN          TC3_IRQn
-  #define IRQ_HANDLER   TC3_Handler
-  #define TIMER_GCLK_ID TC3_GCLK_ID
-  #define TIMER_EVU     EVSYS_ID_USER_TC3_EVU
+  #define TIMERNUM 3
+
+  #if TIMERNUM == 0
+    #define TIMER         TC0
+    #define IRQN          TC0_IRQn
+    #define IRQ_HANDLER   TC0_Handler
+    #define TIMER_GCLK_ID TC0_GCLK_ID
+    #define TIMER_EVU     EVSYS_ID_USER_TC0_EVU
+  #elif TIMERNUM == 1
+    #define TIMER         TC1
+    #define IRQN          TC1_IRQn
+    #define IRQ_HANDLER   TC1_Handler
+    #define TIMER_GCLK_ID TC1_GCLK_ID
+    #define TIMER_EVU     EVSYS_ID_USER_TC1_EVU
+  #elif TIMERNUM == 2
+    #define TIMER         TC2
+    #define IRQN          TC2_IRQn
+    #define IRQ_HANDLER   TC2_Handler
+    #define TIMER_GCLK_ID TC2_GCLK_ID
+    #define TIMER_EVU     EVSYS_ID_USER_TC2_EVU
+  #elif TIMERNUM == 3
+    #define TIMER         TC3
+    #define IRQN          TC3_IRQn
+    #define IRQ_HANDLER   TC3_Handler
+    #define TIMER_GCLK_ID TC3_GCLK_ID
+    #define TIMER_EVU     EVSYS_ID_USER_TC3_EVU
+  #endif
 
   #define clockpin 4 // ItsyBitsy M4
 
@@ -462,6 +484,46 @@ void Adafruit_TFTLCD::begin(uint16_t id) {
   // Enable TCx
   TIMER->COUNT8.CTRLA.reg |= TC_CTRLA_ENABLE;
   while(TIMER->COUNT8.SYNCBUSY.bit.STATUS);
+
+  // CCL STUFF
+  // Enable CCL bus clock (CLK_CCL_APB)
+  MCLK->APBCMASK.bit.CCL_ = 1; // Enable CCL clock
+  // Generic clock (GCLK_CCL) is needed for input events, filter,
+  // edge detection or sequential logic (i.e. not needed here?)
+  GCLK->PCHCTRL[CCL_GCLK_ID].bit.CHEN = 0;
+  while(GCLK->PCHCTRL[CCL_GCLK_ID].bit.CHEN); // Wait for disable
+  pchctrl.bit.GEN                = GCLK_PCHCTRL_GEN_GCLK2_Val;
+  pchctrl.bit.CHEN               = 1;
+  GCLK->PCHCTRL[CCL_GCLK_ID].reg = pchctrl.reg;
+  while(!GCLK->PCHCTRL[CCL_GCLK_ID].bit.CHEN); // Wait for enable
+
+  // CCL/OUT[0] = PA07 (D2), PA19 (D9), PB02 (NA), PB23 (MISO)
+  // CCL/OUT[1] = PA11 (NA), PA31 (SWDIO), PB11 (NA)
+  // CCL/OUT[2] = PB09 (A3), PA25 (NA)
+  // CCL/OUT[3] = PB17 (NA)
+
+  CCL->CTRL.bit.SWRST = 1;  // Reset CCL registers to defaults
+  CCL->CTRL.bit.ENABLE = 1; // Enable CCL
+
+  // LUT control X register can only be written when disabled
+  CCL->LUTCTRL[TIMERNUM].bit.ENABLE = 0;
+
+  //CCL->LUTCTRL[TIMERNUM].bit.FILTSEL = 2; // Filter enabled
+  CCL->LUTCTRL[TIMERNUM].bit.FILTSEL = 0; // No filter
+
+  CCL->LUTCTRL[TIMERNUM].bit.INSEL0 = 6; // TC input source
+  CCL->LUTCTRL[TIMERNUM].bit.INSEL1 = 0; // MASK
+  CCL->LUTCTRL[TIMERNUM].bit.INSEL2 = 0; // MASK
+  CCL->LUTCTRL[TIMERNUM].bit.TRUTH  = 0b01010101; // Invert
+  CCL->LUTCTRL[TIMERNUM].bit.ENABLE = 1;
+
+#if TIMERNUM == 0
+  pinMode(2, OUTPUT);
+  pinPeripheral(2, PIO_CCL);
+#elif TIMERNUM == 2
+  pinMode(A3, OUTPUT);
+  pinPeripheral(A3, PIO_CCL);
+#endif
 
   // EVENTS STUFF
 
