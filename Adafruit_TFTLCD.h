@@ -38,7 +38,11 @@ class Adafruit_TFTLCD : public Adafruit_GFX {
   void     setRotation(uint8_t x);
        // These methods are public in order for BMP examples to work:
   void     setAddrWindow(int x1, int y1, int x2, int y2);
+#if defined(__SAMD51__)
+  void     pushColors(uint16_t *data, uint16_t len, boolean first);
+#else
   void     pushColors(uint16_t *data, uint8_t len, boolean first);
+#endif
   void     pushColorsDMA(uint32_t totalBytes, uint8_t *buffer,
              uint16_t bufSize, void (*callback)(uint8_t *dest, uint16_t len));
 

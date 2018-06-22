@@ -875,7 +875,11 @@ void Adafruit_TFTLCD::drawPixel(int16_t x, int16_t y, uint16_t color) {
 // externally by BMP examples.  Assumes that setWindowAddr() has
 // previously been set to define the bounds.  Max 255 pixels at
 // a time (BMP examples read in small chunks due to limited RAM).
+#if defined(__SAMD51__)
+void Adafruit_TFTLCD::pushColors(uint16_t *data, uint16_t len, boolean first) {
+#else
 void Adafruit_TFTLCD::pushColors(uint16_t *data, uint8_t len, boolean first) {
+#endif
   uint16_t color;
   uint8_t  hi, lo;
   CS_ACTIVE;

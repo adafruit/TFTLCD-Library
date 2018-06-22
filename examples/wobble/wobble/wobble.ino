@@ -9,6 +9,8 @@
 
 #define LCD_RESET A4 // Alternately just connect to Arduino's reset pin
 
+#define DMA_SELECT A1 // Hi/lo chooses DMA vs non-DMA effect
+
 Adafruit_TFTLCD tft(LCD_CS, LCD_CD, LCD_WR, LCD_RD, LCD_RESET);
 
 #define DMALINES 16
@@ -22,6 +24,8 @@ void setup()
 {
   Serial.begin(9600);
   while(!Serial);
+
+  pinMode(DMA_SELECT, INPUT_PULLUP);
 
   // Initialize pixel buffer with alternating red and white bands,
   // 32 pixels wide.  0x00F8 is 16-bit red (0xF800) endian-swapped
@@ -62,7 +66,7 @@ void setup()
 int lineNum;
 int frame = 0;
 
-// pushColorsDMA() callback function -- fills one scanline with
+// pushColorsDMA() callback function -- fills DMALINES scanlines with
 // data from pixels[] array.
 void myCallback(uint8_t *dest, uint16_t len) {
   for(int i=0; i<DMALINES; i++) {
@@ -72,14 +76,25 @@ void myCallback(uint8_t *dest, uint16_t len) {
     if((lineNum + frame/8) & 32) offset = (offset + 32) % 63;
     memcpy(dest, &pixels[offset], len / DMALINES);
     lineNum++;
-    dest += 320 * 2; // Next scanline
+    dest += 320 * 2; // Offset to next scanline (2 bytes/pixel)
   }
 }
 
 void loop() {
   tft.setAddrWindow(0, 0, tft.width() - 1, tft.height() - 1);
   lineNum = 0;
-  tft.pushColorsDMA(tft.width() * tft.height() * 2, dmabuf, tft.width() * DMALINES * 2, myCallback);
+  if(digitalRead(DMA_SELECT)) {
+    tft.pushColorsDMA(tft.width() * tft.height() * 2, dmabuf, tft.width() * DMALINES * 2, myCallback);
+  } else {
+    bool first = true;
+    while(lineNum < tft.height()) {
+      // Fill the DMA buffer, but don't issue it
+      myCallback(dmabuf, tft.width() * DMALINES * 2);
+      // Then send it using non-DMA function:
+      tft.pushColors((uint16_t *)dmabuf, tft.width() * DMALINES, first);
+      first = false;
+    }
+  }
   frame++;
   uint32_t elapsed = (millis() - startTime) / 1000;
   if(elapsed > 0) {
