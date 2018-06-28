@@ -20,10 +20,10 @@
 // For the Arduino Uno, Duemilanove, Diecimila, etc.:
 //   D0 connects to digital pin 8  (Notice these are
 //   D1 connects to digital pin 9   NOT in order!)
-//   D2 connects to digital pin 2
-//   D3 connects to digital pin 3
+//   D2 connects to digital pin 10
+//   D3 connects to digital pin 11
 //   D4 connects to digital pin 4
-//   D5 connects to digital pin 5
+//   D5 connects to digital pin 13
 //   D6 connects to digital pin 6
 //   D7 connects to digital pin 7
 // For the Arduino Mega, use digital pins 22 through 29
