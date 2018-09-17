@@ -15,7 +15,7 @@
 #endif
 #include "pins_arduino.h"
 #include "wiring_private.h"
-#include "Adafruit_HX8357_8bit.h"
+#include "Adafruit_TFTLCD.h"
 #include "pin_magic.h"
 
 #define TFTWIDTH   320
