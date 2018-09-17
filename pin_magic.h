@@ -129,7 +129,7 @@
   // why only certain cases are inlined for each board.
   #define write8 write8inline
 
-#elif defined(__AVR_ATmega1281__) || defined(__AVR_ATmega2561__) || defined(__AVR_ATmega2560__) || defined(__AVR_ATmega1280__) 
+#elif defined(__AVR_ATmega1281__) || defined(__AVR_ATmega2561__) || defined(__AVR_ATmega2560__) || defined(__AVR_ATmega1280__)
 
  // Arduino Mega, ADK, etc.
 
@@ -261,7 +261,7 @@
 
  #ifdef USE_ADAFRUIT_SHIELD_PINOUT
 
-  #define RD_PORT PIOA				/*pin A0 */	
+  #define RD_PORT PIOA				/*pin A0 */
   #define WR_PORT PIOA				/*pin A1 */
   #define CD_PORT PIOA				/*pin A2 */
   #define CS_PORT PIOA				/*pin A3 */
@@ -279,7 +279,7 @@
    PIO_Clear(PIOB, (((~d) & 0x20)<<(27-5))); \
    WR_STROBE; }
 
-  #define read8inline(result) { \    
+  #define read8inline(result) { \
    RD_ACTIVE;   \
    delayMicroseconds(1);      \
    result = (((PIOC->PIO_PDSR & (1<<23)) >> (23-7)) | ((PIOC->PIO_PDSR & (1<<24)) >> (24-6)) | \
@@ -334,10 +334,10 @@
 
     // When using the TFT breakout board, control pins are configurable.
     #define RD_ACTIVE	rdPort->PIO_CODR |= rdPinSet		//PIO_Clear(rdPort, rdPinSet)
-    #define RD_IDLE		rdPort->PIO_SODR |= rdPinSet		//PIO_Set(rdPort, rdPinSet)	
+    #define RD_IDLE		rdPort->PIO_SODR |= rdPinSet		//PIO_Set(rdPort, rdPinSet)
     #define WR_ACTIVE	wrPort->PIO_CODR |= wrPinSet		//PIO_Clear(wrPort, wrPinSet)
     #define WR_IDLE		wrPort->PIO_SODR |= wrPinSet		//PIO_Set(wrPort, wrPinSet)
-    #define CD_COMMAND	cdPort->PIO_CODR |= cdPinSet		//PIO_Clear(cdPort, cdPinSet)
+    #define CD_COMMAND	cdPort->PIO_CODR |= cdPinSet	//PIO_Clear(cdPort, cdPinSet)
     #define CD_DATA		cdPort->PIO_SODR |= cdPinSet		//PIO_Set(cdPort, cdPinSet)
     #define CS_ACTIVE	csPort->PIO_CODR |= csPinSet		//PIO_Clear(csPort, csPinSet)
     #define CS_IDLE		csPort->PIO_SODR |= csPinSet		//PIO_Set(csPort, csPinSet)
@@ -345,13 +345,59 @@
  #endif
 
 
+#elif defined(ESP32) //ESP32 with breakoutboard
+
+  #ifdef USE_ADAFRUIT_SHIELD_PINOUT
+   #error "ESP32 support only for the adafruit TFT breakout"
+  #else
+
+    #define write8inline(d) { \
+      GPIO.out_w1tc = B00000000000001111000000000111100; \
+      GPIO.out_w1ts = d; \
+      WR_STROBE; }
+
+    #define read8inline(result) { \
+       RD_ACTIVE;                  \
+       DELAY7;                     \
+       result = GPIO.in & 0x0E006000;\
+       RD_IDLE; }                      //NOTE: This is a 32bit register and the function returns a uint8_t? How to check the 8 data pins?
+
+    #define setWriteDirInline() { \
+      io_conf.intr_type = GPIO_INTR_DISABLE; \
+      io_conf.mode = GPIO_MODE_OUTPUT; \
+      io_conf.pull_down_en = GPIO_PULLDOWN_DISABLE; \
+      io_conf.pull_up_en = GPIO_PULLUP_DISABLE; \
+      io_conf.pin_bit_mask =  ((1ULL << 2) | (1ULL << 3) | (1ULL << 4) | (1ULL << 5) | (1ULL << 15) | (1ULL << 16) | (1ULL << 17) | (1ULL << 18)); \
+      gpio_config(&io_conf);}
+
+
+    #define setReadDirInline() { \
+      io_conf.intr_type = GPIO_INTR_DISABLE; \
+      io_conf.mode = GPIO_MODE_INPUT; \
+      io_conf.pull_down_en = GPIO_PULLDOWN_DISABLE; \
+      io_conf.pull_up_en = GPIO_PULLUP_DISABLE; \
+      io_conf.pin_bit_mask =  ((1ULL << 2) | (1ULL << 3) | (1ULL << 4) | (1ULL << 5) | (1ULL << 15) | (1ULL << 16) | (1ULL << 17) | (1ULL << 18)); \
+      gpio_config(&io_conf);}
+
+    // When using the TFT breakout board, control pins are configurable.
+    #define RD_ACTIVE  GPIO.out_w1tc |=  rdPinset
+    #define RD_IDLE    GPIO.out_w1ts |=  rdPinSet
+    #define WR_ACTIVE  GPIO.out_w1tc |=  wrPinset
+    #define WR_IDLE    GPIO.out_w1ts |=  wrPinSet
+    #define CD_COMMAND GPIO.out_w1tc |=  cdPinset
+    #define CD_DATA    GPIO.out_w1ts |=  cdPinSet
+    #define CS_ACTIVE  GPIO.out_w1tc |=  csPinset
+    #define CS_IDLE    GPIO.out_w1ts |=  csPinSet
+
+  #endif
+
 #else
 
  #error "Board type unsupported / not recognized"
 
 #endif
 
-#if !defined(__SAM3X8E__)
+#if !defined(__SAM3X8E__) && !defined(ESP32)
 // Stuff common to all Arduino AVR board types:
 
 #ifdef USE_ADAFRUIT_SHIELD_PINOUT
