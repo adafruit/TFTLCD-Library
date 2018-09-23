@@ -93,7 +93,13 @@ class Adafruit_TFTLCD : public Adafruit_GFX {
 					  csPinUnset,  cdPinUnset,  wrPinUnset,  rdPinUnset,
 					  _reset;
   #endif
-  
+  #if defined(ESP32)
+  gpio_config_t io_conf;
+	uint32_t          csPinSet  ,  cdPinSet  ,  wrPinSet  ,  rdPinSet  ,
+					  csPinUnset,  cdPinUnset,  wrPinUnset,  rdPinUnset,
+					  _reset;
+  #endif
+
 #endif
 };
 
