@@ -74,7 +74,7 @@ Adafruit_TFTLCD::Adafruit_TFTLCD(
     wrPort->PIO_SODR  |=  wrPinSet;
     rdPort->PIO_SODR  |=  rdPinSet;
   #endif
-	#ifdef ESP32
+	#if defined(ESP32)
     GPIO.out_w1ts   |=  csPinSet; // Set all control bits to HIGH (idle)
     GPIO.out_w1ts   |=  cdPinSet; // Signals are ACTIVE LOW
     GPIO.out_w1ts   |=  wrPinSet;
@@ -908,7 +908,7 @@ uint16_t Adafruit_TFTLCD::readID(void) {
     */
     writeRegister24(HX8357D_SETC, 0xFF8357);
     delay(300);
-    //Serial.println(readReg(0xD0), HEX);
+    // Serial.println(readReg(0xD0), HEX);
     if (readReg(0xD0) == 0x990000) {
       return 0x8357;
     }
@@ -954,8 +954,8 @@ uint32_t Adafruit_TFTLCD::readReg(uint8_t r) {
   CS_IDLE;
   setWriteDir();  // Restore LCD data port(s) to WRITE configuration
 
-  //Serial.print("Read $"); Serial.print(r, HEX);
-  //Serial.print(":\t0x"); Serial.println(id, HEX);
+  // Serial.print("Read $"); Serial.print(r, HEX);
+  // Serial.print(":\t0x"); Serial.println(id, HEX);
   return id;
 }
 

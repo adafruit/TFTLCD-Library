@@ -1,21 +1,17 @@
-This is a library for the Adafruit 2.8" TFT display.
-This library works with the Adafruit 2.8" TFT Breakout w/SD card
-  ----> http://www.adafruit.com/products/335
-as well as Adafruit TFT Touch Shield
-  ----> http://www.adafruit.com/products/376
- 
-Check out the links above for our tutorials and wiring diagrams.
-These displays use 8-bit parallel to communicate, 12 or 13 pins are required
-to interface (RST is optional).
-Adafruit invests time and resources providing this open source code,
-please support Adafruit and open-source hardware by purchasing
-products from Adafruit!
+I added esp32 support for the 8-bit interface on the Adafruit TFT breakout board, NOT the Adafruit TFT shield.
 
-Written by Limor Fried/Ladyada for Adafruit Industries.
-MIT license, all text above must be included in any redistribution
+The pins used are hardcoded due to the use of bitmasks. I hope someone will have use of it.
+Depending on your esp32 breakout board the locations of the pins used will differ.
 
-To download. click the DOWNLOADS button in the top right corner, rename the uncompressed folder Adafruit_TFTLCD. Check that the Adafruit_TFTLCD folder contains Adafruit_TFTLCD.cpp and Adafruit_TFTLCD.
+Pins:
 
-Place the Adafruit_TFT library folder your <arduinosketchfolder>/libraries/ folder. You may need to create the libraries subfolder if its your first library. Restart the IDE
+D0 - Gpio 2
+D1 - Gpio 3
+D2 - Gpio 4
+D3 - Gpio 5
+D4 - Gpio 15
+D5 - Gpio 16
+D6 - Gpio 17
+D7 - Gpio 18
 
-Also requires the Adafruit_GFX library for Arduino. https://github.com/adafruit/Adafruit-GFX-Library
+The control pins (CS, CD, WR, RD, RST) are free to choose.

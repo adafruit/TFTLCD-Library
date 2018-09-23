@@ -54,13 +54,29 @@
 // This code burns 7 cycles (437.5 nS) doing nothing; the RJMPs are
 // equivalent to two NOPs each, final NOP burns the 7th cycle, and the
 // last line is a radioactive mutant emoticon.
-#define DELAY7        \
-  asm volatile(       \
-    "rjmp .+0" "\n\t" \
-    "rjmp .+0" "\n\t" \
-    "rjmp .+0" "\n\t" \
-    "nop"      "\n"   \
-    ::);
+#if !defined(ESP32)
+  #define DELAY7        \
+    asm volatile(       \
+      "rjmp .+0" "\n\t" \
+      "rjmp .+0" "\n\t" \
+      "rjmp .+0" "\n\t" \
+      "nop"      "\n"   \
+      ::);
+#else
+  #define DELAY7        \
+    asm volatile(       \
+      "nop" "\n" "nop" "\n" "nop" "\n" "nop" "\n" "nop" "\n" "nop" "\n" "nop" "\n" "nop" "\n" "nop" "\n" "nop" "\n"      \
+      "nop" "\n" "nop" "\n" "nop" "\n" "nop" "\n" "nop" "\n" "nop" "\n" "nop" "\n" "nop" "\n" "nop" "\n" "nop" "\n"      \
+      "nop" "\n" "nop" "\n" "nop" "\n" "nop" "\n" "nop" "\n" "nop" "\n" "nop" "\n" "nop" "\n" "nop" "\n" "nop" "\n"      \
+      "nop" "\n" "nop" "\n" "nop" "\n" "nop" "\n" "nop" "\n" "nop" "\n" "nop" "\n" "nop" "\n" "nop" "\n" "nop" "\n"      \
+      "nop" "\n" "nop" "\n" "nop" "\n" "nop" "\n" "nop" "\n" "nop" "\n" "nop" "\n" "nop" "\n" "nop" "\n" "nop" "\n"      \
+      "nop" "\n" "nop" "\n" "nop" "\n" "nop" "\n" "nop" "\n" "nop" "\n" "nop" "\n" "nop" "\n" "nop" "\n" "nop" "\n"      \
+      "nop" "\n" "nop" "\n" "nop" "\n" "nop" "\n" "nop" "\n" "nop" "\n" "nop" "\n" "nop" "\n" "nop" "\n" "nop" "\n"      \
+      "nop" "\n" "nop" "\n" "nop" "\n" "nop" "\n" "nop" "\n" "nop" "\n" "nop" "\n" "nop" "\n" "nop" "\n" "nop" "\n"      \
+      "nop" "\n" "nop" "\n" "nop" "\n" "nop" "\n" "nop" "\n" "nop" "\n" "nop" "\n" "nop" "\n" "nop" "\n" "nop" "\n"      \
+      "nop" "\n" "nop" "\n" "nop" "\n" "nop" "\n" "nop" "\n" "nop" "\n" "nop" "\n" "nop" "\n" "nop" "\n" "nop" "\n"      \
+      "nop" "\n" "nop" "\n" "nop" "\n" "nop" "\n" "nop" "\n");
+#endif
 
 #if defined(__AVR_ATmega168__) || defined(__AVR_ATmega328P__) || defined (__AVR_ATmega328__) || defined(__AVR_ATmega8__)
 
@@ -352,15 +368,18 @@
   #else
 
     #define write8inline(d) { \
-      GPIO.out_w1tc = B00000000000001111000000000111100; \
-      GPIO.out_w1ts = d; \
-      WR_STROBE; }
+      GPIO.out_w1tc = (((~d) & 0xF) << 2); \
+      GPIO.out_w1tc = (((~d) & 0xF0) << 11); \
+      GPIO.out_w1ts = (((d) & 0xF) << 2); \
+      GPIO.out_w1ts = (((d) & 0xF0) << 11); \
+      WR_STROBE; } //NOTE: Set data to correct indexes in out_w1ts register
 
     #define read8inline(result) { \
-       RD_ACTIVE;                  \
-       DELAY7;                     \
-       result = GPIO.in & 0x0E006000;\
-       RD_IDLE; }                      //NOTE: This is a 32bit register and the function returns a uint8_t? How to check the 8 data pins?
+       RD_ACTIVE;                 \
+       DELAY7;                    \
+       result |= ((GPIO.in & 0b00000000000000000000000000111100) >> 2); \
+       result |= ((GPIO.in & 0b00000000000001111000000000000000) >> 11); \
+       RD_IDLE; } //NOTE: Checked and is correct
 
     #define setWriteDirInline() { \
       io_conf.intr_type = GPIO_INTR_DISABLE; \
@@ -380,16 +399,21 @@
       gpio_config(&io_conf);}
 
     // When using the TFT breakout board, control pins are configurable.
-    #define RD_ACTIVE  GPIO.out_w1tc |=  rdPinset
+    #define RD_ACTIVE  GPIO.out_w1tc |=  rdPinSet
     #define RD_IDLE    GPIO.out_w1ts |=  rdPinSet
-    #define WR_ACTIVE  GPIO.out_w1tc |=  wrPinset
+    #define WR_ACTIVE  GPIO.out_w1tc |=  wrPinSet
     #define WR_IDLE    GPIO.out_w1ts |=  wrPinSet
-    #define CD_COMMAND GPIO.out_w1tc |=  cdPinset
+    #define CD_COMMAND GPIO.out_w1tc |=  cdPinSet
     #define CD_DATA    GPIO.out_w1ts |=  cdPinSet
-    #define CS_ACTIVE  GPIO.out_w1tc |=  csPinset
+    #define CS_ACTIVE  GPIO.out_w1tc |=  csPinSet
     #define CS_IDLE    GPIO.out_w1ts |=  csPinSet
 
   #endif
+
+  // #define write8            write8inline
+  // #define read8             read8inline
+  // #define setWriteDir       setWriteDirInline
+  // #define setReadDir        setReadDirInline
 
 #else
 
