@@ -6,6 +6,12 @@
 #ifndef _ADAFRUIT_TFTLCD_H_
 #define _ADAFRUIT_TFTLCD_H_
 
+#if defined(__AVR__)
+  typedef volatile uint8_t RwReg;
+#elif defined(__arm__)
+  typedef volatile uint32_t RwReg;
+#endif
+
 #if ARDUINO >= 100
  #include "Arduino.h"
 #else
@@ -81,19 +87,14 @@ class Adafruit_TFTLCD : public Adafruit_GFX {
 
 #ifndef USE_ADAFRUIT_SHIELD_PINOUT
 
-  #ifdef __AVR__
-    volatile uint8_t *csPort    , *cdPort    , *wrPort    , *rdPort;
-	uint8_t           csPinSet  ,  cdPinSet  ,  wrPinSet  ,  rdPinSet  ,
-					  csPinUnset,  cdPinUnset,  wrPinUnset,  rdPinUnset,
-					  _reset;
+  volatile RwReg *csPort    , *cdPort    , *wrPort    , *rdPort;
+  RwReg           csPinSet  ,  cdPinSet  ,  wrPinSet  ,  rdPinSet  ,
+    csPinUnset,  cdPinUnset,  wrPinUnset,  rdPinUnset,
+    _reset;
+
+  #if defined(ADAFRUIT_PYPORTAL) 
+  volatile uint8_t *write_port, *read_port, *dir_port;
   #endif
-  #if defined(__SAM3X8E__)
-    Pio *csPort    , *cdPort    , *wrPort    , *rdPort;
-	uint32_t          csPinSet  ,  cdPinSet  ,  wrPinSet  ,  rdPinSet  ,
-					  csPinUnset,  cdPinUnset,  wrPinUnset,  rdPinUnset,
-					  _reset;
-  #endif
-  
 #endif
 };
 

@@ -74,6 +74,12 @@ Adafruit_TFTLCD::Adafruit_TFTLCD(
     wrPort->PIO_SODR  |=  wrPinSet;
     rdPort->PIO_SODR  |=  rdPinSet;
   #endif
+  #if defined(ADAFRUIT_PYPORTAL) 
+    write_port = (volatile uint8_t *)&(PORT->Group[0].OUT.reg) + 2;
+    read_port = (volatile uint8_t *)&(PORT->Group[0].IN.reg) + 2;
+    dir_port = (volatile uint8_t *)&(PORT->Group[0].DIR.reg) + 2;
+  #endif
+
   pinMode(cs, OUTPUT);    // Enable outputs
   pinMode(cd, OUTPUT);
   pinMode(wr, OUTPUT);

@@ -345,6 +345,25 @@
  #endif
 
 
+#elif defined(ADAFRUIT_PYPORTAL)
+  #define RD_ACTIVE  *rdPort &=  rdPinUnset
+  #define RD_IDLE    *rdPort |=  rdPinSet
+  #define WR_ACTIVE  *wrPort &=  wrPinUnset
+  #define WR_IDLE    *wrPort |=  wrPinSet
+  #define CD_COMMAND *cdPort &=  cdPinUnset
+  #define CD_DATA    *cdPort |=  cdPinSet
+  #define CS_ACTIVE  *csPort &=  csPinUnset
+  #define CS_IDLE    *csPort |=  csPinSet
+
+  #define write8inline(d) { *write_port = d; WR_STROBE; }
+  #define read8inline(result) { \
+		RD_ACTIVE;   \
+		delayMicroseconds(1);      \
+		result = *read_port; \
+		RD_IDLE;}
+  #define setWriteDirInline() { *dir_port = 0xFF; }
+  #define setReadDirInline() { *dir_port = 0x00; }
+
 #else
 
  #error "Board type unsupported / not recognized"
