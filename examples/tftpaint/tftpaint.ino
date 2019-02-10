@@ -57,11 +57,19 @@
 /*
  * use touch_calibrate to check out
  */
-
+/*
 #define TS_MINX 150
 #define TS_MINY 120
 #define TS_MAXX 920
 #define TS_MAXY 940
+*/
+/*
+ * values for 0x7783 device
+ */
+#define TS_MINX 900
+#define TS_MINY 160
+#define TS_MAXX 120
+#define TS_MAXY 710
 
 // For better pressure precision, we need to know the resistance
 // between X+ and X- Use any multimeter to read it
