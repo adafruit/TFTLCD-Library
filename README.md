@@ -1,4 +1,4 @@
-#Fork working with 0x7783 LCD devices
+# Fork working with 0x7783 LCD devices
 
 Added the hardware specific values from the SWIFT driver by Smoke And Wires
 This works also for some Iduino 2.8'' displays
