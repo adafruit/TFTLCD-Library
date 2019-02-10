@@ -171,6 +171,97 @@ static const uint8_t HX8347G_regValues[] PROGMEM = {
   0x08           , 0x01,
   0x09           , 0x3F
 };
+//new for SWIFT Display
+static const uint16_t ST7781_regValues[] PROGMEM = {
+ 0x0001,0x0100,    
+ 0x0002,0x0700,    
+0x0003,0x1030,    
+0x0008,0x0302,    
+0x0009,0x0000,   
+0x000A,0x0008,    
+//*******POWER CONTROL REGISTER INITIAL*******//    
+0x0010,0x0790,    
+0x0011,0x0005,    
+0x0012,0x0000,   
+0x0013,0x0000,    
+ //delayms(50, 
+//********POWER SUPPPLY STARTUP 1 SETTING*******//    
+0x0010,0x12B0,    
+// delayms(50,  
+0x0011,0x0007,    
+ //delayms(50,  
+//********POWER SUPPLY STARTUP 2 SETTING******//    
+0x0012,0x008C,    
+0x0013,0x1700,    
+0x0029,0x0022,    
+// delayms(50,   
+//******GAMMA CLUSTER SETTING******//    
+0x0030,0x0000,    
+0x0031,0x0505,    
+0x0032,0x0205,    
+0x0035,0x0206,    
+0x0036,0x0408,    
+0x0037,0x0000,    
+0x0038,0x0504,
+0x0039,0x0206,    
+0x003C,0x0206,    
+0x003D,0x0408,    
+// -----------DISPLAY WINDOWS 240*320-------------//    
+0x0050,0x0000,
+0x0051,0x00EF,   
+0x0052,0x0000,   
+0x0053,0x013F,   
+//-----FRAME RATE SETTING-------//    
+0x0060,0xA700,   
+0x0061,0x0001,   
+0x0090,0x0033, //RTNI setting
+//-------DISPLAY ON------//    
+0x0007,0x0133,    0x0001,0x0100,    
+ 0x0002,0x0700,    
+0x0003,0x1030,    
+0x0008,0x0302,    
+0x0009,0x0000,   
+0x000A,0x0008,    
+//*******POWER CONTROL REGISTER INITIAL*******//    
+0x0010,0x0790,    
+0x0011,0x0005,    
+0x0012,0x0000,   
+0x0013,0x0000,    
+ //delayms(50, 
+//********POWER SUPPPLY STARTUP 1 SETTING*******//    
+0x0010,0x12B0,    
+// delayms(50,  
+0x0011,0x0007,    
+// delayms(50,  
+//********POWER SUPPLY STARTUP 2 SETTING******//    
+0x0012,0x008C,    
+0x0013,0x1700,    
+0x0029,0x0022,    
+// delayms(50,   
+//******GAMMA CLUSTER SETTING******//    
+0x0030,0x0000,    
+0x0031,0x0505,    
+0x0032,0x0205,    
+0x0035,0x0206,    
+0x0036,0x0408,    
+0x0037,0x0000,    
+0x0038,0x0504,
+0x0039,0x0206,    
+0x003C,0x0206,    
+0x003D,0x0408,    
+// -----------DISPLAY WINDOWS 240*320-------------//    
+0x0050,0x0000,
+0x0051,0x00EF,   
+0x0052,0x0000,   
+0x0053,0x013F,   
+//-----FRAME RATE SETTING-------//    
+0x0060,0xA700,   
+0x0061,0x0001,   
+0x0090,0x0033, //RTNI setting
+//-------DISPLAY ON------//    
+0x0007,0x0133,   
+};
+
 
 static const uint8_t HX8357D_regValues[] PROGMEM = {
   HX8357_SWRESET, 0,
@@ -263,6 +354,18 @@ void Adafruit_TFTLCD::begin(uint16_t id) {
     while(i < sizeof(ILI932x_regValues) / sizeof(uint16_t)) {
       a = pgm_read_word(&ILI932x_regValues[i++]);
       d = pgm_read_word(&ILI932x_regValues[i++]);
+      if(a == TFTLCD_DELAY) delay(d);
+      else                  writeRegister16(a, d);
+    }
+    setRotation(rotation);
+    setAddrWindow(0, 0, TFTWIDTH-1, TFTHEIGHT-1);
+  } else if (id = 0x7783 ){ //new for SWITCH Display
+      uint16_t a, d;
+      driver = ID_932X;
+    CS_ACTIVE;
+    while(i < sizeof(ST7781_regValues) / sizeof(uint16_t)) {
+      a = pgm_read_word(&ST7781_regValues[i++]);
+      d = pgm_read_word(&ST7781_regValues[i++]);
       if(a == TFTLCD_DELAY) delay(d);
       else                  writeRegister16(a, d);
     }
