@@ -1,3 +1,13 @@
+# Fork working with 0x7783 LCD devices
+
+Added the hardware specific values from the SWIFT driver by Smoke And Wires
+This works also for some Iduino 2.8'' displays
+
+Now you can work with the Adafruit examples.
+
+This library is only for the Arduino Uno
+
+
 This is a library for the Adafruit 2.8" TFT display.
 This library works with the Adafruit 2.8" TFT Breakout w/SD card
   ----> http://www.adafruit.com/products/335

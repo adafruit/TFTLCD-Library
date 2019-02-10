@@ -49,10 +49,27 @@
 #define YM 9   // can be a digital pin
 #define XP 8   // can be a digital pin
 
+//Measured ADC values for (0,0) and (210-1,320-1)
+//TS_MINX corresponds to ADC value when X = 0
+//TS_MINY corresponds to ADC value when Y = 0
+//TS_MAXX corresponds to ADC value when X = 240 -1
+//TS_MAXY corresponds to ADC value when Y = 320 -1
+/*
+ * use touch_calibrate to check out
+ */
+/*
 #define TS_MINX 150
 #define TS_MINY 120
 #define TS_MAXX 920
 #define TS_MAXY 940
+*/
+/*
+ * values for 0x7783 device
+ */
+#define TS_MINX 900
+#define TS_MINY 160
+#define TS_MAXX 120
+#define TS_MAXY 710
 
 // For better pressure precision, we need to know the resistance
 // between X+ and X- Use any multimeter to read it
@@ -101,6 +118,8 @@ void setup(void) {
     Serial.println(F("Found ILI9341 LCD driver"));
   } else if(identifier == 0x8357) {
     Serial.println(F("Found HX8357D LCD driver"));
+  } else if(identifier == 0x7783){
+    Serial.println(F("Found 7783 LCD driver"));
   } else {
     Serial.print(F("Unknown LCD driver chip: "));
     Serial.println(identifier, HEX);
