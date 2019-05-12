@@ -867,6 +867,25 @@ uint16_t Adafruit_TFTLCD::readPixel(int16_t x, int16_t y) {
     return (((uint16_t)r & B11111000) << 8) |
            (((uint16_t)g & B11111100) << 3) |
            (           b              >> 3);
+  } else if(driver == ID_9341) {
+
+    uint8_t r, g, b;
+
+    setAddrWindow( x,y,x,y);
+    CS_ACTIVE;
+    CD_COMMAND;
+    write8( ILI9341_MEMORYREAD);
+    setReadDir();  // Set up LCD data port(s) for READ operations
+    CD_DATA;
+    read8(r);      // First byte back is a dummy read
+    read8(r);
+    read8(g);
+    read8(b);
+    setWriteDir(); // Restore LCD data port(s) to WRITE configuration
+    CS_IDLE;
+    return (((uint16_t)r & B11111000) << 8) |
+           (((uint16_t)g & B11111100) << 3) |
+           (           b              >> 3);
   } else return 0;
 }
 
