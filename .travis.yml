@@ -1,0 +1,21 @@
+language: c
+sudo: false
+
+# Blacklist
+branches:
+  except:
+    - gh-pages
+
+env:
+  global:
+     - PRETTYNAME="Adafruit 2.8" TFT display Library"
+
+before_install:
+   - source <(curl -SLs https://raw.githubusercontent.com/adafruit/travis-ci-arduino/master/install.sh)
+
+script:
+   - build_main_platforms
+
+# Generate and deploy documentation
+after_success:
+  - source <(curl -SLs  https://raw.githubusercontent.com/adafruit/travis-ci-arduino/master/library_check.sh)
