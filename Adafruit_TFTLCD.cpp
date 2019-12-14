@@ -393,6 +393,7 @@ void Adafruit_TFTLCD::setAddrWindow(int x1, int y1, int x2, int y2) {
      case 1:
       t  = y1;
       y1 = x1;
+      if ( y2>(TFTWIDTH-1) ) y2 = (TFTWIDTH-1);
       x1 = TFTWIDTH  - 1 - y2;
       y2 = x2;
       x2 = TFTWIDTH  - 1 - t;
@@ -413,6 +414,7 @@ void Adafruit_TFTLCD::setAddrWindow(int x1, int y1, int x2, int y2) {
       t  = x1;
       x1 = y1;
       y1 = TFTHEIGHT - 1 - x2;
+      if ( y2>(TFTWIDTH-1) ) y2 = (TFTWIDTH-1);
       x2 = y2;
       y2 = TFTHEIGHT - 1 - t;
       x  = x1;
