@@ -112,7 +112,7 @@ void Adafruit_TFTLCD::init(void) {
 
   rotation = 0;
   cursor_y = cursor_x = 0;
-  textsize = 1;
+  int textsize = 1;
   textcolor = 0xFFFF;
   _width = TFTWIDTH;
   _height = TFTHEIGHT;
