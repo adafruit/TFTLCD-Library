@@ -1,3 +1,32 @@
+/*!
+ * @file Adafruit_TFTLCD.cpp
+ *
+ * @mainpage Adafruit TFTLCD Library
+ *
+ * @section intro_sec Introduction
+ *
+ * This is a library for our Adafruit 16-channel PWM & Servo driver, shield or
+ * FeatherWing
+ *
+ * Pick one up today in the adafruit shop!
+ * * https://www.adafruit.com/product/335
+ * * https://www.adafruit.com/product/376
+ *
+ * These displays use 8-bit parallel to communicate, 12 or 13 pins are required
+ * to interface (RST is optional). Adafruit invests time and resources providing
+ * this open source code, please support Adafruit and open-source hardware by
+ * purchasing products from Adafruit!
+ *
+ * @section author Author
+ *
+ * Written by Limor Fried/Ladyada for Adafruit Industries.
+ *
+ * @section license License
+ *
+ * BSD license, check license.txt for more information. All text above must be
+ * included in any redistribution
+ */
+
 // IMPORTANT: LIBRARY MUST BE SPECIFICALLY CONFIGURED FOR EITHER TFT SHIELD
 // OR BREAKOUT BOARD USAGE.  SEE RELEVANT COMMENTS IN Adafruit_TFTLCD.h
 
@@ -21,15 +50,15 @@
 //#define TFTWIDTH   320
 //#define TFTHEIGHT  480
 
-#define TFTWIDTH 240
-#define TFTHEIGHT 320
+#define TFTWIDTH 240  //!< TFT width in pixels
+#define TFTHEIGHT 320 //!< TFT height in pixels
 
 // LCD controller chip identifiers
-#define ID_932X 0
-#define ID_7575 1
-#define ID_9341 2
-#define ID_HX8357D 3
-#define ID_UNKNOWN 0xFF
+#define ID_932X 0       //!< 932x LCD driver ID
+#define ID_7575 1       //!< 7575 LCD driver ID
+#define ID_9341 2       //!< 9341 LCD driver ID
+#define ID_HX8357D 3    //!< HX8357D LCD driver ID
+#define ID_UNKNOWN 0xFF //!< Unknown LCD driver ID
 
 #include "registers.h"
 
@@ -119,7 +148,7 @@ void Adafruit_TFTLCD::init(void) {
 }
 
 // Initialization command tables for different LCD controllers
-#define TFTLCD_DELAY 0xFF
+#define TFTLCD_DELAY 0xFF //!< Allows the delay to be set
 static const uint8_t HX8347G_regValues[] PROGMEM = {
     0x2E, 0x89, 0x29, 0x8F, 0x2B, 0x02, 0xE2, 0x00, 0xE4, 0x01, 0xE5, 0x10,
     0xE6, 0x01, 0xE7, 0x10, 0xE8, 0x70, 0xF2, 0x00, 0xEA, 0x00, 0xEB, 0x20,
@@ -138,6 +167,7 @@ static const uint8_t HX8347G_regValues[] PROGMEM = {
     0x02, 0x00, 0x03, 0x00, 0x04, 0x00, 0x05, 0xEF, 0x06, 0x00, 0x07, 0x00,
     0x08, 0x01, 0x09, 0x3F};
 
+/// @cond SKIP
 static const uint8_t HX8357D_regValues[] PROGMEM = {
     HX8357_SWRESET,
     0,
@@ -316,6 +346,7 @@ static const uint16_t ILI932x_regValues[] PROGMEM = {
     ILI932X_DISP_CTRL1,
     0x0133, // Main screen turn on
 };
+/// @endcond SKIP
 
 void Adafruit_TFTLCD::begin(uint16_t id) {
   uint8_t i = 0;
@@ -932,6 +963,9 @@ void Adafruit_TFTLCD::setRotation(uint8_t x) {
 }
 
 #ifdef read8isFunctionalized
+/*!
+ * @brief Reads 8 bits
+ */
 #define read8(x) x = read8fn()
 #endif
 

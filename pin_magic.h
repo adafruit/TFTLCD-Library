@@ -1,3 +1,6 @@
+/*!
+ * @file pin_magic.h
+ */
 #ifndef _pin_magic_
 #define _pin_magic_
 
@@ -49,11 +52,13 @@
 // Due dig. pin :  40  39  38  37  36  35  34  33
 // Due port/pin : PC8 PC7 PC6 PC5 PC4 PC3 PC2 PC1 (one contiguous PORT. -ish…)
 
-// Pixel read operations require a minimum 400 nS delay from RD_ACTIVE
-// to polling the input pins.  At 16 MHz, one machine cycle is 62.5 nS.
-// This code burns 7 cycles (437.5 nS) doing nothing; the RJMPs are
-// equivalent to two NOPs each, final NOP burns the 7th cycle, and the
-// last line is a radioactive mutant emoticon.
+/*!
+ * @brief Pixel read operations require a minimum 400 nS delay from RD_ACTIVE
+ * to polling the input pins.  At 16 MHz, one machine cycle is 62.5 nS.
+ * This code burns 7 cycles (437.5 nS) doing nothing; the RJMPs are
+ * equivalent to two NOPs each, final NOP burns the 7th cycle, and the
+ * last line is a radioactive mutant emoticon.
+ */
 #define DELAY7                                                                 \
   asm volatile("rjmp .+0"                                                      \
                "\n\t"                                                          \
@@ -485,22 +490,24 @@
 #define CS_ACTIVE CS_PORT &= ~CS_MASK
 #define CS_IDLE CS_PORT |= CS_MASK
 
-#else // Breakout board
+#else                                    // Breakout board
 
 // When using the TFT breakout board, control pins are configurable.
-#define RD_ACTIVE *rdPort &= rdPinUnset
-#define RD_IDLE *rdPort |= rdPinSet
-#define WR_ACTIVE *wrPort &= wrPinUnset
-#define WR_IDLE *wrPort |= wrPinSet
-#define CD_COMMAND *cdPort &= cdPinUnset
-#define CD_DATA *cdPort |= cdPinSet
-#define CS_ACTIVE *csPort &= csPinUnset
-#define CS_IDLE *csPort |= csPinSet
+#define RD_ACTIVE *rdPort &= rdPinUnset  //!< Activate read mode
+#define RD_IDLE *rdPort |= rdPinSet      //!< Set read mode to idle
+#define WR_ACTIVE *wrPort &= wrPinUnset  //!< Activate write mode
+#define WR_IDLE *wrPort |= wrPinSet      //!< Set write mode to idle
+#define CD_COMMAND *cdPort &= cdPinUnset //!< Command/data command mode
+#define CD_DATA *cdPort |= cdPinSet      //!< Command/data data mode
+#define CS_ACTIVE *csPort &= csPinUnset  //!< Activate chip select
+#define CS_IDLE *csPort |= csPinSet      //!< Set chip select to idle
 
 #endif
 #endif
 
-// Data write strobe, ~2 instructions and always inline
+/*!
+ * @brief Data write strobe, ~2 instructions and always inline
+ */
 #define WR_STROBE                                                              \
   {                                                                            \
     WR_ACTIVE;                                                                 \
@@ -510,7 +517,9 @@
 // These higher-level operations are usually functionalized,
 // except on Mega where's there's gobs and gobs of program space.
 
-// Set value of TFT register: 8-bit address, 8-bit value
+/*!
+ * @brief Set value of TFT register: 8-bit address, 8-bit value
+ */
 #define writeRegister8inline(a, d)                                             \
   {                                                                            \
     CD_COMMAND;                                                                \
@@ -519,8 +528,10 @@
     write8(d);                                                                 \
   }
 
-// Set value of TFT register: 16-bit address, 16-bit value
-// See notes at top about macro expansion, hence hi & lo temp vars
+/*!
+ * @brief Set value of TFT register: 16-bit address, 16-bit value
+ * See notes at top about macro expansion, hence hi & lo temp vars
+ */
 #define writeRegister16inline(a, d)                                            \
   {                                                                            \
     uint8_t hi, lo;                                                            \
@@ -536,7 +547,10 @@
     write8(lo);                                                                \
   }
 
-// Set value of 2 TFT registers: Two 8-bit addresses (hi & lo), 16-bit value
+/*!
+ * @brief Set value of 2 TFT registers: Two 8-bit addresses (hi & lo), 16-bit
+ * value
+ */
 #define writeRegisterPairInline(aH, aL, d)                                     \
   {                                                                            \
     uint8_t hi = (d) >> 8, lo = (d);                                           \
