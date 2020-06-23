@@ -13,7 +13,7 @@ jobs:
     - uses: actions/checkout@v2
     - uses: actions/checkout@v2
       with:
-         repository: dherrada/ci-arduino
+         repository: adafruit/ci-arduino
          path: ci
 
     - name: pre-install
