@@ -359,8 +359,8 @@
 
 #define read8inline(result)                                                    \
   {                                                                            \
-    \    
-   RD_ACTIVE;                                                                  \
+                                                                               \
+    RD_ACTIVE;                                                                 \
     delayMicroseconds(1);                                                      \
     result = (((PIOC->PIO_PDSR & (1 << 23)) >> (23 - 7)) |                     \
               ((PIOC->PIO_PDSR & (1 << 24)) >> (24 - 6)) |                     \

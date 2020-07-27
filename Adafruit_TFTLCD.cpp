@@ -112,7 +112,6 @@ void Adafruit_TFTLCD::init(void) {
 
   rotation = 0;
   cursor_y = cursor_x = 0;
-  int textsize = 1;
   textcolor = 0xFFFF;
   _width = TFTWIDTH;
   _height = TFTHEIGHT;
@@ -342,7 +341,6 @@ void Adafruit_TFTLCD::begin(uint16_t id) {
 
   } else if (id == 0x9341) {
 
-    uint16_t a, d;
     driver = ID_9341;
     CS_ACTIVE;
     writeRegister8(ILI9341_SOFTRESET, 0);
@@ -885,7 +883,7 @@ void Adafruit_TFTLCD::setRotation(uint8_t x) {
 
   if (driver == ID_9341) {
     // MEME, HX8357D uses same registers as 9341 but different values
-    uint16_t t;
+    uint16_t t = 0;
 
     switch (rotation) {
     case 2:
@@ -909,7 +907,7 @@ void Adafruit_TFTLCD::setRotation(uint8_t x) {
 
   if (driver == ID_HX8357D) {
     // MEME, HX8357D uses same registers as 9341 but different values
-    uint16_t t;
+    uint16_t t = 0;
 
     switch (rotation) {
     case 2:
@@ -1012,7 +1010,8 @@ uint16_t Adafruit_TFTLCD::readID(void) {
 
   // retry a bunch!
   for (int i = 0; i < 5; i++) {
-    id = readReg(0xD3);
+    id = (uint16_t)readReg(0xD3);
+    delayMicroseconds(50);
     if (id == 0x9341) {
       return id;
     }
