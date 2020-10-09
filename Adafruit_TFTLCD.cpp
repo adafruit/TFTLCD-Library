@@ -359,7 +359,7 @@ void Adafruit_TFTLCD::begin(uint16_t id) {
     }
     setRotation(rotation);
     setAddrWindow(0, 0, TFTWIDTH-1, TFTHEIGHT-1);
-  } else if (id = 0x7783 ){ //new for SWITCH Display
+  } else if (id == 0x7783 ){ //new for SWITCH Display
       uint16_t a, d;
       driver = ID_932X;
     CS_ACTIVE;
