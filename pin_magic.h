@@ -202,21 +202,17 @@
   }
 
 #else // Mega w/Breakout board
-
-#define write8inline(d)                                                        \
-  {                                                                            \
-    PORTA = (d);                                                               \
-    WR_STROBE;                                                                 \
-  }
-#define read8inline(result)                                                    \
-  {                                                                            \
-    RD_ACTIVE;                                                                 \
-    DELAY7;                                                                    \
-    result = PINA;                                                             \
-    RD_IDLE;                                                                   \
-  }
-#define setWriteDirInline() DDRA = 0xff
-#define setReadDirInline() DDRA = 0
+  #define write8inline(d) {\                        
+	PORTH &= ~(0x78);\
+  	PORTH |= ((d&0xC0) >> 3) | ((d&0x3) << 5);\
+  	PORTE &= ~(0x38);\
+  	PORTE |= ((d & 0xC) << 2) | ((d & 0x20) >> 2);\
+  	PORTG &= ~(0x20);\
+  	PORTG |= (d & 0x10) << 1; \ 
+    WR_STROBE; }
+  #define read8inline(result) { RD_ACTIVE; DELAY7; result = (PINH & 0x60) >> 5;result |= (PINH & 0x18) << 3;result |= (PINE & 0x8) << 2;result |= (PINE & 0x30) >> 2;result |= (PING & 0x20) >> 1;RD_IDLE;}
+  #define setWriteDirInline() { DDRH |= 0x78;DDRE |= 0x38;DDRG |= 0x20; }
+  #define setReadDirInline()  { DDRH &= ~0x78;DDRE &= ~0x38;DDRG &= ~(0x20); }
 
 #endif
 
