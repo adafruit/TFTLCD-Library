@@ -1000,8 +1000,25 @@ uint16_t Adafruit_TFTLCD::readPixel(int16_t x, int16_t y) {
     CS_IDLE;
     return (((uint16_t)r & B11111000) << 8) | (((uint16_t)g & B11111100) << 3) |
            (b >> 3);
-  } else
-    return 0;
+  } else if(driver == ID_9341) {
+    uint8_t r, g, b;
+    setAddrWindow(x, y, width()-1, height()-1);
+    CS_ACTIVE;
+    CD_COMMAND; 
+    write8(ILI9341_MEMORYREAD);
+    setReadDir();
+    CD_DATA;
+    delayMicroseconds(50);
+    read8(r);
+    read8(r);
+    read8(g);
+    read8(b);
+    setWriteDir();
+    CS_IDLE;
+    return (((uint16_t)r & B11111000) << 8) | (((uint16_t)g & B11111100) << 3) |
+           (b >> 3);
+
+  } else return 0;
 }
 
 // Ditto with the read/write port directions, as above.
